@@ -19,6 +19,9 @@ def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
     if isinstance(ignore_list, dict) and isinstance(ignore_list.get('file'), str):
         file = os.path.expanduser(ignore_list['file'])
         ignore_list['file'] = os.path.join(config['config_dir'], file)  # absolute file wins in join
+    log_file = config.get('settings', {}).get('log_file')
+    if isinstance(log_file, str):
+        config['settings']['log_file'] = os.path.join(config['config_dir'], os.path.expanduser(log_file))
     return config
 
 

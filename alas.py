@@ -8,10 +8,12 @@ Usage:
   python alas.py --ai                          # AI review of borderline tokens
   python alas.py --parallel                    # process repos concurrently
   python alas.py --verbose                     # per-stage token counts
+  python alas.py --log run.log                 # debug log: stage timings, raw AI responses
   python alas.py --train labels.jsonl          # train classifier from labeled JSONL
   python alas.py --config ~/abo.json           # config elsewhere (or set ABO_CONFIG)
 """
 import argparse
+import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -23,6 +25,27 @@ from ai.hooks import HookRegistry
 from ai.reviewer import AIReviewer
 from training.predictor import MLPredictor
 from tasks.factory import TaskFactory
+
+
+def setup_logging(path: str) -> logging.Handler:
+    """Sends DEBUG logs to `path`; caller removes the returned handler."""
+    handler = logging.FileHandler(path, encoding='utf-8')
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s'))
+    root = logging.getLogger()
+    root.addHandler(handler)
+    handler._prev_level = root.level
+    root.setLevel(logging.DEBUG)
+    for noisy in ('anthropic', 'httpx', 'httpcore'):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+    return handler
+
+
+def teardown_logging(handler: logging.Handler) -> None:
+    root = logging.getLogger()
+    root.removeHandler(handler)
+    root.setLevel(handler._prev_level)
+    handler.close()
 
 
 def run_repo(
@@ -97,7 +120,7 @@ def run_repo(
     formatter = TaskFactory.create_task(
         formatter_key, effective_settings, repo_config, modules_config
     )
-    return formatter.run(token_dict)
+    return formatter.run(token_dict, content_map)
 
 
 def cmd_run(args, config: Dict) -> None:
@@ -191,14 +214,24 @@ def main() -> None:
         '--verbose', action='store_true',
         help='Print per-stage token counts.'
     )
+    parser.add_argument(
+        '--log', metavar='FILE',
+        help='Write a DEBUG log (stage timings, raw AI responses) to FILE; overrides settings.log_file.'
+    )
 
     args = parser.parse_args()
     config = load_config(args.config)
 
-    if args.train:
-        cmd_train(args, config)
-    else:
-        cmd_run(args, config)
+    log_file = args.log or config['settings'].get('log_file')
+    handler = setup_logging(log_file) if log_file else None
+    try:
+        if args.train:
+            cmd_train(args, config)
+        else:
+            cmd_run(args, config)
+    finally:
+        if handler:
+            teardown_logging(handler)
 
 
 if __name__ == '__main__':

@@ -3,17 +3,18 @@ from typing import Dict
 
 from tasks.base_task import BaseTask
 from models.token import Token
+from ai.reviewer import get_source_line
 
 
 class CsvFormatterTask(BaseTask):
     def __init__(self, settings_config, repo_config):
         super().__init__(settings_config, repo_config)
         self.field_names = [
-            'word', 'repo', 'locations', 'num_occurrences', 'uppercase_occurrences',
+            'word', 'repo', 'locations', 'context', 'num_occurrences', 'uppercase_occurrences',
             'misspelled', 'confidence', 'suggestion', 'ignore', 'label',
         ]
 
-    def run(self, tokens: Dict[str, Token]) -> str:
+    def run(self, tokens: Dict[str, Token], content_map=None) -> str:
         validated_tokens = self.validate_input(tokens)
         output_file = f"{self.repo_config['name']}.csv"
 
@@ -29,6 +30,7 @@ class CsvFormatterTask(BaseTask):
                     'word': token.text,
                     'repo': token.repo,
                     'locations': self._format_locations(token.locations),
+                    'context': get_source_line(token, content_map) or '',
                     'num_occurrences': len(token.locations),
                     'uppercase_occurrences': token.uppercase_occurrences,
                     'misspelled': token.misspelled,

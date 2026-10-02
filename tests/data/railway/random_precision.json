@@ -1,0 +1,41 @@
+{
+  "sample_size": 150,
+  "population": 303,
+  "counts": {
+    "true_positive": 5,
+    "false_positive": 143,
+    "uncertain": 2
+  },
+  "precision_decided": {
+    "value": 0.033783783783783786,
+    "tp": 5,
+    "decided": 148,
+    "wilson95": [
+      0.014515094894459395,
+      0.07664221473147576
+    ],
+    "wilson95_fpc": [
+      0.0183096361650518,
+      0.06151620364168908
+    ]
+  },
+  "precision_bounds_over_sample": {
+    "uncertain_all_false_positive": 0.03333333333333333,
+    "uncertain_all_true_positive": 0.04666666666666667,
+    "wilson95_low": 0.014320431807431248,
+    "wilson95_high": 0.09318647287196435
+  },
+  "uncertain_fraction": 0.013333333333333334,
+  "seed": 20261002,
+  "candidate_sha256": "ac71a9900aeaf91103248fa5b97054bb5c795b054550ef818e656e37c90b9ed1",
+  "candidate_count": 303,
+  "limitations": [
+    "Single corpus (Railway docs) and a single labeler; no inter-rater agreement measured.",
+    "Population is the misspelled-flagged candidate list of the current code at maxOccurrences=1 with the committed ignore list; the 1399 in-dictionary records (misspelled=false, confidence <= 0.05) are still exported but rank below every flagged word and are excluded.",
+    "The committed ignore list was built from earlier purposive labels, so precision is for the post-ignore queue only.",
+    "Word-level, not occurrence-level: each word is judged from its first location and quoted context.",
+    "Uncertain labels are kept out of the decided precision; the bounds show the range if they were all FP or all TP.",
+    "Sample is a large share of a small population, so a finite-population-corrected Wilson interval (effective n = n(N-1)/(N-n)) is reported alongside plain Wilson, which is conservative here.",
+    "Only sampled words are labeled; the remaining candidates were not reviewed and no full-corpus labeling is claimed."
+  ]
+}

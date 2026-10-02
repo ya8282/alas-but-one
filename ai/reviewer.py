@@ -1,8 +1,10 @@
 import json
+import logging
 from typing import Dict, List, Optional
 
 from models.token import Token
 
+logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = (
     "You are a technical documentation quality reviewer. "
@@ -16,12 +18,23 @@ Some may be typos; others may be legitimate technical terms, acronyms, or jargon
 
 For each word, judge whether it is a typo that should be corrected.
 
-Words (with surrounding context where available):
+Words (with surrounding context if provided):
 {words_json}
 
 Respond with a JSON array, one object per word in the same order:
 [{{"word": "...", "is_typo": true/false, "confidence": 0.0-1.0, \
 "suggestion": "corrected word or null", "comment": "one-line reasoning"}}]"""
+
+
+def get_source_line(token: Token, content_map: Optional[Dict[str, str]]) -> Optional[str]:
+    """Stripped source line of the token's first location (1-based), or None."""
+    if not token.locations or not content_map:
+        return None
+    loc = token.locations[0]
+    lines = (content_map.get(loc.filename) or '').split('\n')
+    if not 1 <= loc.line <= len(lines):
+        return None
+    return lines[loc.line - 1].strip() or None
 
 
 class AIReviewer:
@@ -39,6 +52,7 @@ class AIReviewer:
         self.min_conf = ai_cfg.get('review_confidence_min', 0.3)
         self.max_conf = ai_cfg.get('review_confidence_max', 0.7)
         self.batch_size = ai_cfg.get('batch_size', 20)
+        self.send_context = ai_cfg.get('send_context', True)
         self.max_occ = settings_config.get('maxOccurrences', 1)
         self._client = None
 
@@ -75,10 +89,13 @@ class AIReviewer:
     def _review_batch(self, tokens: List[Token], content_map: Dict[str, str]) -> None:
         client = self._get_client()
 
-        payload = [
-            {"word": t.text, "context": self._get_context(t, content_map)}
-            for t in tokens
-        ]
+        if self.send_context:
+            payload = [
+                {"word": t.text, "context": self._get_context(t, content_map)}
+                for t in tokens
+            ]
+        else:
+            payload = [{"word": t.text} for t in tokens]
 
         user_msg = _USER_TEMPLATE.format(
             max_occ=self.max_occ,
@@ -93,6 +110,7 @@ class AIReviewer:
         )
 
         raw = response.content[0].text.strip()
+        logger.debug("AI batch of %d words, raw response: %s", len(tokens), raw)
         # Strip markdown code fences if present
         if raw.startswith("```"):
             raw = raw.split("```")[1]
@@ -129,6 +147,7 @@ class AIReviewer:
             try:
                 self._review_batch(batch, content_map)
             except Exception as e:
+                logger.debug("AI batch %d failed: %r", i // self.batch_size + 1, e)
                 print(f"  [AI reviewer] batch {i // self.batch_size + 1} failed: {e}")
 
         reviewed = sum(1 for t in candidates if t.ai_reviewed)

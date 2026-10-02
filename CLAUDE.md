@@ -17,6 +17,7 @@ python alas.py --format csv             # CSV output
 python alas.py --repo "Golang Driver Docs"  # single repo
 python alas.py --ai                     # AI review of borderline tokens
 python alas.py --verbose                # per-stage token counts
+python alas.py --log run.log            # DEBUG log: stage timings, raw AI responses
 python alas.py --parallel               # parallel repo processing
 python alas.py --train labels.jsonl     # train ML model from labeled data
 ```

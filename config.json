@@ -14,7 +14,8 @@
       "model": "claude-haiku-4-5-20251001",
       "review_confidence_min": 0.3,
       "review_confidence_max": 0.7,
-      "batch_size": 20
+      "batch_size": 20,
+      "send_context": true
     },
 
     "training": {

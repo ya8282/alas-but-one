@@ -39,6 +39,8 @@ Each repository names the directory to walk with `path`: absolute, `~`-prefixed,
 
 The config file is `./config.json` by default. Point both `alas.py` and `save_ignore_list.py` elsewhere with `ABO_CONFIG=/path/to/config.json`, or pass `--config PATH` to `alas.py`.
 
+`--log FILE` (or `settings.log_file`; `--log` wins, relative `log_file` resolves against the config file's directory) writes a DEBUG log of each stage's item count and elapsed time and each AI batch's raw response or failure. Stdout is unchanged; with neither set, no log file is created.
+
 Add as many repositories as needed. Run all of them at once or target one with `--repo`.
 
 Without a repository `text_format` setting, `.rst` files use RST masking, `.md` files use Markdown masking, and `.txt` files remain plain text. Set `"text_format": "rst"`, `"text_format": "markdown"` or `"text_format": "plain"` to apply that choice to all supported extensions. Other values fail validation. The bundled Golang configuration explicitly selects RST.
@@ -57,6 +59,7 @@ python alas.py --ai                          # AI review of borderline tokens
 python alas.py --parallel                    # process repos concurrently
 python alas.py --include-ignored             # audit or reverse prior ignore decisions
 python alas.py --verbose                     # per-stage token counts
+python alas.py --log run.log                 # debug log file (or settings.log_file)
 python alas.py --train labels.jsonl          # train ML classifier from labeled output
 python alas.py --config ~/abo.json           # config file elsewhere (or set ABO_CONFIG)
 ```
@@ -70,6 +73,7 @@ Each run produces `<repo name>.jsonl` (or `.csv` with `--format csv`), one recor
   "word": "retreive",
   "repo": "My Docs",
   "locations": [{"file": "/path/to/file.rst", "line": 42}],
+  "context": "retreive the value",  // stripped source line of the first location
   "num_occurrences": 1,
   "uppercase_occurrences": 0,
   "misspelled": true,
@@ -98,7 +102,7 @@ The spell checker flags unknown words and computes a `confidence` score using ed
 
 **AI review (optional, `--ai`)**
 
-Tokens with confidence between 0.3 and 0.7 — the borderline cases where the heuristic is uncertain — are sent to Claude in batches. Approved terms are excluded even with `--include-ignored`. Claude updates `confidence`, `suggestion`, and `ai_comment` for each. Requires `ANTHROPIC_API_KEY` to be set.
+Tokens with confidence between 0.3 and 0.7 — the borderline cases where the heuristic is uncertain — are sent to Anthropic's API in batches. Each word is sent with its context: the source line it first appears on plus the lines directly above and below (up to three lines, joined with ` | `). Set `ai.send_context` to `false` to send bare words only, with no document text or file paths; this is recommended for confidential documentation, though suggestions may be less accurate without context. Approved terms are excluded even with `--include-ignored`. Claude updates `confidence`, `suggestion`, and `ai_comment` for each. Requires `ANTHROPIC_API_KEY` to be set.
 
 The review thresholds and model are configurable in `config.json`:
 
@@ -108,7 +112,8 @@ The review thresholds and model are configurable in `config.json`:
   "model": "claude-haiku-4-5-20251001",
   "review_confidence_min": 0.3,
   "review_confidence_max": 0.7,
-  "batch_size": 20
+  "batch_size": 20,
+  "send_context": true
 }
 ```
 
