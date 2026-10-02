@@ -131,7 +131,9 @@ The seven-feature vector keeps the `is_all_upper` slot but now stores the same u
 
 ## Ignore List
 
-The ignore list remains in MongoDB using PyMongo and one document per repository (`repo_name`, `words`). `ignore_list_store.py` owns settings resolution, reads and add/remove updates, and closes clients on success or failure.
+By default the ignore list lives in MongoDB using PyMongo and one document per repository (`repo_name`, `words`). `ignore_list_store.py` owns settings resolution, reads and add/remove updates, and closes clients on success or failure.
+
+To avoid MongoDB entirely, set `"ignore_list": {"file": "ignore.json"}` in `settings`. The file is one JSON object `{"repo_name": ["word", ...]}`, resolved relative to the config file (absolute and `~` paths also work), created on first save, with sorted, deduplicated lists so it can be committed and reviewed in PRs. `pymongo` is not needed in this mode.
 
 For both scanning and saving, `ABO_MONGO_URI` overrides `settings.MONGODB_URI` when explicitly set. If absent, config is used. An empty or whitespace-only override raises a configuration error; it never falls back. URI, database and collection must be nonempty strings. Credentials are not printed in configuration errors.
 
@@ -142,7 +144,7 @@ python alas.py --include-ignored             # add --format csv if needed
 python save_ignore_list.py "My Docs.jsonl"  # or reviewed CSV
 ```
 
-In JSONL, set `"ignore": true` to add a word and `false` to remove it. In CSV, use `Y` and `N`. Audit exports restore approved terms with their flags intact, so setting them to false/N and saving reverses the decision. Repeated additions are idempotent, and repository decisions remain isolated. MongoDB must be available for normal scans and saving; the offline checks below mock that boundary.
+In JSONL, set `"ignore": true` to add a word and `false` to remove it. In CSV, use `Y` and `N`. Audit exports restore approved terms with their flags intact, so setting them to false/N and saving reverses the decision. Repeated additions are idempotent, and repository decisions remain isolated. MongoDB (or the file backend below) must be available for normal scans and saving; the offline checks below mock that boundary.
 
 ## Extending the Pipeline
 

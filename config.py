@@ -15,6 +15,10 @@ def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
     with open(path) as f:
         config = json.load(f)
     config['config_dir'] = os.path.dirname(os.path.abspath(path))
+    ignore_list = config.get('settings', {}).get('ignore_list')
+    if isinstance(ignore_list, dict) and isinstance(ignore_list.get('file'), str):
+        file = os.path.expanduser(ignore_list['file'])
+        ignore_list['file'] = os.path.join(config['config_dir'], file)  # absolute file wins in join
     return config
 
 

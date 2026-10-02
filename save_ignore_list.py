@@ -1,5 +1,6 @@
 """
-Persist ignore-list changes from a reviewed CSV or JSONL output file to MongoDB.
+Persist ignore-list changes from a reviewed CSV or JSONL output file to MongoDB or the
+settings.ignore_list.file JSON file.
 
 Usage:
   python save_ignore_list.py output.jsonl

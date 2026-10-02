@@ -521,6 +521,37 @@ class RegressionTests(unittest.TestCase):
                         alas.main()
                     load.assert_called_once_with(path)
 
+class FileIgnoreListTests(unittest.TestCase):
+    def test_file_backend_round_trip(self):
+        from ignore_list_store import load_words, apply_decisions
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'sub', 'ignore.json')
+            settings = {'ignore_list': {'file': path}}
+            self.assertEqual(load_words('a', settings), set())
+            apply_decisions('a', {'zeta': True, 'alpha': True}, settings)
+            apply_decisions('a', {'alpha': True}, settings)
+            apply_decisions('b', {'other': True}, settings)
+            self.assertEqual(load_words('a', settings), {'alpha', 'zeta'})
+            self.assertEqual(load_words('b', settings), {'other'})
+            with open(path) as f:
+                self.assertEqual(json.load(f)['a'], ['alpha', 'zeta'])
+            apply_decisions('a', {'alpha': False}, settings)
+            self.assertEqual(load_words('a', settings), {'zeta'})
+            self.assertEqual(load_words('b', settings), {'other'})
+            self.assertEqual(os.listdir(os.path.dirname(path)), ['ignore.json'])
+
+    def test_relative_file_resolves_against_config_dir(self):
+        from config import load_config
+        from contextlib import chdir
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = os.path.join(directory, 'config.json')
+            with open(config_path, 'w') as f:
+                json.dump({'settings': {'ignore_list': {'file': 'ignore.json'}}}, f)
+            with chdir(tempfile.gettempdir()):
+                config = load_config(config_path)
+            resolved = config['settings']['ignore_list']['file']
+            self.assertEqual(os.path.realpath(resolved), os.path.realpath(os.path.join(directory, 'ignore.json')))
+
 
 if __name__ == '__main__':
     unittest.main()
