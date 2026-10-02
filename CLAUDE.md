@@ -119,6 +119,7 @@ Pre/post repo hooks also available via `@default_hooks.pre_repo` / `@default_hoo
 
 | Variable | Required for |
 |---|---|
+| `ABO_CONFIG` | config file location (default `./config.json`; `--config` overrides) |
 | `ABO_MONGO_URI` | ignore list (overrides config MONGODB_URI) |
 | `ANTHROPIC_API_KEY` | `--ai` flag |
 

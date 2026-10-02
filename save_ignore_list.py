@@ -8,28 +8,16 @@ Usage:
 For JSONL: set "ignore": true/false on each record.
 For CSV:   set the 'ignore' column to 'Y'/'N'.
 
-Requires ABO_MONGO_URI environment variable.
+Uses ABO_MONGO_URI when set, otherwise settings.MONGODB_URI from the config file
+($ABO_CONFIG or ./config.json).
 """
 import collections
 import csv
 import json
-import os
 import re
 import sys
-from pymongo import MongoClient, UpdateOne
-
-
-def _get_collection():
-    uri = os.environ.get('ABO_MONGO_URI')
-    if not uri:
-        sys.exit("ABO_MONGO_URI environment variable is not set.")
-
-    with open('config.json') as f:
-        config = json.load(f)
-
-    db_name = config['settings']['ignore_list']['database']
-    coll_name = config['settings']['ignore_list']['collection']
-    return MongoClient(uri)[db_name][coll_name]
+from config import default_config_path, load_config
+from ignore_list_store import apply_decisions
 
 
 def _load_csv(path: str) -> dict:
@@ -68,38 +56,13 @@ def _load_jsonl(path: str) -> dict:
     return update_dict
 
 
-def _apply_updates(update_dict: dict) -> None:
+def _apply_updates(update_dict: dict, settings: dict) -> None:
     if not update_dict:
         print("No updates to apply.")
         return
-
-    coll = _get_collection()
-    ops = []
-
-    for repo_name, word_map in update_dict.items():
-        add_words = [w for w, v in word_map.items() if v]
-        remove_words = [w for w, v in word_map.items() if not v]
-
-        if add_words:
-            ops.append(UpdateOne(
-                {'repo_name': repo_name},
-                {'$addToSet': {'words': {'$each': add_words}}},
-                upsert=True,
-            ))
-        if remove_words:
-            ops.append(UpdateOne(
-                {'repo_name': repo_name},
-                {'$pullAll': {'words': remove_words}},
-            ))
-
-    if ops:
-        result = coll.bulk_write(ops)
-        print(
-            f"Applied {len(ops)} operations "
-            f"({result.upserted_count} upserted, {result.modified_count} modified)."
-        )
-    else:
-        print("No changes to write.")
+    for repo_name, decisions in update_dict.items():
+        apply_decisions(repo_name, decisions, settings)
+    print(f"Applied decisions for {len(update_dict)} repositories.")
 
 
 def main():
@@ -115,7 +78,11 @@ def main():
     else:
         sys.exit("Input file must be .jsonl or .csv")
 
-    _apply_updates(update_dict)
+    settings = load_config(default_config_path())['settings']
+    try:
+        _apply_updates(update_dict, settings)
+    except ValueError as error:
+        sys.exit(str(error))
 
 
 if __name__ == '__main__':

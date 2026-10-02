@@ -9,23 +9,20 @@ Usage:
   python alas.py --parallel                    # process repos concurrently
   python alas.py --verbose                     # per-stage token counts
   python alas.py --train labels.jsonl          # train classifier from labeled JSONL
+  python alas.py --config ~/abo.json           # config elsewhere (or set ABO_CONFIG)
 """
 import argparse
-import json
+import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict
 
+from config import default_config_path, load_config, resolve_repo_dir
 from pipeline import Pipeline
 from ai.hooks import HookRegistry
 from ai.reviewer import AIReviewer
 from training.predictor import MLPredictor
 from tasks.factory import TaskFactory
-
-
-def load_config(path: str = 'config.json') -> Dict[str, Any]:
-    with open(path) as f:
-        return json.load(f)
 
 
 def run_repo(
@@ -37,6 +34,8 @@ def run_repo(
     ai_enabled: bool,
     predictor: MLPredictor,
     verbose: bool,
+    include_ignored: bool = False,
+    config_dir: str = '',
 ) -> str:
     hooks = HookRegistry()
 
@@ -64,11 +63,7 @@ def run_repo(
         ai_cfg['enabled'] = True
         effective_settings = {**settings_config, 'ai': ai_cfg}
 
-    directory = (
-        effective_settings['repo_base_full_path']
-        + repo_config['relative_path']
-        + repo_config['source_dir']
-    )
+    directory = resolve_repo_dir(repo_config, effective_settings, config_dir)
 
     # Main pipeline (everything except formatting)
     pipeline = Pipeline(effective_settings, repo_config, modules_config, hooks=hooks)
@@ -93,6 +88,8 @@ def run_repo(
     token_dict = reviewer.run(token_dict, content_map)
 
     # Format and write output
+    if not include_ignored:
+        token_dict = {word: token for word, token in token_dict.items() if token.ignore != 'Y'}
     formatter_key = 'jsonl_formatter' if output_format == 'jsonl' else 'formatter'
     formatter = TaskFactory.create_task(
         formatter_key, effective_settings, repo_config, modules_config
@@ -125,6 +122,8 @@ def cmd_run(args, config: Dict) -> None:
             ai_enabled=args.ai,
             predictor=predictor,
             verbose=args.verbose,
+            include_ignored=args.include_ignored,
+            config_dir=config.get('config_dir', ''),
         )
         return repo_name, output
 
@@ -158,6 +157,10 @@ def main() -> None:
         description='Find atomic typo candidates in documentation repositories.'
     )
     parser.add_argument(
+        '--config', metavar='PATH', default=default_config_path(),
+        help='Config file (default: $ABO_CONFIG or ./config.json).'
+    )
+    parser.add_argument(
         '--train', metavar='JSONL',
         help='Train ML classifier from a labeled JSONL file and exit.'
     )
@@ -178,12 +181,16 @@ def main() -> None:
         help='Process multiple repos concurrently.'
     )
     parser.add_argument(
+        '--include-ignored', action='store_true',
+        help='Include approved words for auditing or reversing ignore decisions.'
+    )
+    parser.add_argument(
         '--verbose', action='store_true',
         help='Print per-stage token counts.'
     )
 
     args = parser.parse_args()
-    config = load_config()
+    config = load_config(args.config)
 
     if args.train:
         cmd_train(args, config)
