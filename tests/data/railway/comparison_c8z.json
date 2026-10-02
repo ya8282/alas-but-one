@@ -2,7 +2,7 @@
   "stages": {
     "baseline": {
       "candidates": 2541,
-      "sample_precision": 0.109375,
+      "sample_precision": 0.125,
       "sample_candidates": 64,
       "full_top_10": {
         "candidates": 10,
@@ -22,18 +22,18 @@
         ]
       },
       "known_prose_typos": {
-        "retained": 7,
-        "total": 7
+        "retained": 8,
+        "total": 8
       }
     },
     "after_previous": {
       "candidates": 1819,
-      "sample_precision": 0.12727272727272726,
+      "sample_precision": 0.14545454545454545,
       "sample_candidates": 55,
       "full_top_10": {
         "candidates": 10,
-        "true_positives": 0,
-        "precision": 0.0,
+        "true_positives": 1,
+        "precision": 0.1,
         "words": [
           "api's",
           "bundler",
@@ -48,18 +48,18 @@
         ]
       },
       "known_prose_typos": {
-        "retained": 7,
-        "total": 7
+        "retained": 8,
+        "total": 8
       }
     },
     "possessive_fix": {
       "candidates": 1740,
-      "sample_precision": 0.13725490196078433,
+      "sample_precision": 0.1568627450980392,
       "sample_candidates": 51,
       "full_top_10": {
         "candidates": 10,
-        "true_positives": 0,
-        "precision": 0.0,
+        "true_positives": 1,
+        "precision": 0.1,
         "words": [
           "argv",
           "booleans",
@@ -74,18 +74,18 @@
         ]
       },
       "known_prose_typos": {
-        "retained": 7,
-        "total": 7
+        "retained": 8,
+        "total": 8
       }
     },
     "possessive_fix_plus_ignore_list": {
       "candidates": 1702,
-      "sample_precision": 0.5384615384615384,
+      "sample_precision": 0.6153846153846154,
       "sample_candidates": 13,
       "full_top_10": {
         "candidates": 10,
-        "true_positives": 4,
-        "precision": 0.4,
+        "true_positives": 5,
+        "precision": 0.5,
         "words": [
           "argv",
           "booleans",
@@ -100,8 +100,8 @@
         ]
       },
       "known_prose_typos": {
-        "retained": 7,
-        "total": 7
+        "retained": 8,
+        "total": 8
       }
     }
   },
