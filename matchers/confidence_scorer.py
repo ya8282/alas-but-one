@@ -16,6 +16,20 @@ def _edit_distance(s1: str, s2: str) -> int:
     return dp[n]
 
 
+# ponytail: edit-distance-2 search costs seconds per word and grows with length;
+# above this length no Railway or Plaid word had a distance-2 correction, so only
+# distance 1 is searched. Ceiling: long real-English distance-2 typos lose their
+# suggestion. Upgrade path: a SymSpell-style index if that matters.
+MAX_EDIT2_LENGTH = 20
+
+
+def _correction(word: str, checker: SpellChecker) -> Optional[str]:
+    if len(word) <= MAX_EDIT2_LENGTH:
+        return checker.correction(word)
+    candidates = checker.known(checker.edit_distance_1(word))
+    return max(candidates, key=checker.__getitem__) if candidates else None
+
+
 def compute_confidence(
     word: str, misspelled: bool, checker: SpellChecker,
     uppercase_ratio: Optional[float] = None,
@@ -38,7 +52,7 @@ def compute_confidence(
     if not misspelled:
         score = 0.05
     else:
-        correction = checker.correction(word)
+        correction = _correction(word, checker)
         if correction and correction != word:
             suggestion = correction
             dist = _edit_distance(word, correction)

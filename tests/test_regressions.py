@@ -88,6 +88,23 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(compute_confidence('Http', True, checker)[0], 0.4)
         self.assertEqual(compute_confidence('I', True, checker)[0], 0.16)
 
+    def test_long_identifiers_skip_edit_distance_two_but_prose_typos_keep_suggestions(self):
+        from spellchecker import SpellChecker
+        from matchers.confidence_scorer import compute_confidence, MAX_EDIT2_LENGTH
+        checker = SpellChecker()
+        with patch.object(SpellChecker, '_SpellChecker__edit_distance_alt', autospec=True,
+                          side_effect=SpellChecker._SpellChecker__edit_distance_alt) as ed2:
+            self.assertEqual(compute_confidence('avilable', True, checker), (0.85, 'available'))
+            self.assertEqual(compute_confidence('avlable', True, checker), (0.6, 'available'))  # distance 2 still searched
+            ed2.reset_mock()
+            ident = 'watchlistscreeningindividualreviewcreaterequest'
+            self.assertGreater(len(ident), MAX_EDIT2_LENGTH)
+            self.assertEqual(compute_confidence(ident, True, checker), (0.24, None))
+            ed2.assert_not_called()
+            # distance-1 typo on a long word still gets its suggestion
+            confidence, suggestion = compute_confidence('internationalizationn', True, checker)
+            self.assertEqual((confidence, suggestion is not None), (0.51, True))
+
     def test_casing_exports_training_round_trip_and_legacy(self):
         from training.features import extract
         from training.trainer import load_labeled_jsonl
