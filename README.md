@@ -99,7 +99,7 @@ The spell checker flags unknown words and computes a `confidence` score using ed
 
 **AI review (optional, `--ai`)**
 
-Tokens with confidence between 0.3 and 0.7 — the borderline cases where the heuristic is uncertain — are sent to Claude in batches. Approved terms are excluded even with `--include-ignored`. Claude updates `confidence`, `suggestion`, and `ai_comment` for each. Requires `ANTHROPIC_API_KEY` to be set.
+Tokens with confidence between 0.3 and 0.7 — the borderline cases where the heuristic is uncertain — are sent to Anthropic's API in batches. Each word is sent with its context: the source line it first appears on plus the lines directly above and below (up to three lines, joined with ` | `). Set `ai.send_context` to `false` to send bare words only, with no document text or file paths; this is recommended for confidential documentation, though suggestions may be less accurate without context. Approved terms are excluded even with `--include-ignored`. Claude updates `confidence`, `suggestion`, and `ai_comment` for each. Requires `ANTHROPIC_API_KEY` to be set.
 
 The review thresholds and model are configurable in `config.json`:
 
@@ -109,7 +109,8 @@ The review thresholds and model are configurable in `config.json`:
   "model": "claude-haiku-4-5-20251001",
   "review_confidence_min": 0.3,
   "review_confidence_max": 0.7,
-  "batch_size": 20
+  "batch_size": 20,
+  "send_context": true
 }
 ```
 

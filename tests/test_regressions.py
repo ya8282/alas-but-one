@@ -575,6 +575,30 @@ class RegressionTests(unittest.TestCase):
                         alas.main()
                     load.assert_called_once_with(path)
 
+class AISendContextTests(unittest.TestCase):
+    def _run(self, send_context=None):
+        t = Token('teh', 'test', [TokenLocation('a.md', 2)], confidence=0.5)
+        content = {'a.md': 'first line\nSECRET teh sentence\nthird line'}
+        ai_cfg = {'enabled': True}
+        if send_context is not None:
+            ai_cfg['send_context'] = send_context
+        reviewer = AIReviewer({'ai': ai_cfg})
+        client = Mock()
+        client.messages.create.return_value.content = [Mock(text='[]')]
+        with patch.object(reviewer, '_get_client', return_value=client):
+            reviewer.run({'teh': t}, content)
+        return client.messages.create.call_args.kwargs['messages'][0]['content']
+
+    def test_context_sent_by_default(self):
+        self.assertIn('SECRET teh sentence', self._run())
+
+    def test_bare_words_when_send_context_false(self):
+        msg = self._run(False)
+        self.assertIn('teh', msg)
+        for leaked in ('SECRET', 'first line', 'a.md', '"context"'):
+            self.assertNotIn(leaked, msg)
+
+
 class FileIgnoreListTests(unittest.TestCase):
     def test_file_backend_round_trip(self):
         from ignore_list_store import load_words, apply_decisions

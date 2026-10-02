@@ -16,7 +16,7 @@ Some may be typos; others may be legitimate technical terms, acronyms, or jargon
 
 For each word, judge whether it is a typo that should be corrected.
 
-Words (with surrounding context where available):
+Words (with surrounding context if provided):
 {words_json}
 
 Respond with a JSON array, one object per word in the same order:
@@ -50,6 +50,7 @@ class AIReviewer:
         self.min_conf = ai_cfg.get('review_confidence_min', 0.3)
         self.max_conf = ai_cfg.get('review_confidence_max', 0.7)
         self.batch_size = ai_cfg.get('batch_size', 20)
+        self.send_context = ai_cfg.get('send_context', True)
         self.max_occ = settings_config.get('maxOccurrences', 1)
         self._client = None
 
@@ -86,10 +87,13 @@ class AIReviewer:
     def _review_batch(self, tokens: List[Token], content_map: Dict[str, str]) -> None:
         client = self._get_client()
 
-        payload = [
-            {"word": t.text, "context": self._get_context(t, content_map)}
-            for t in tokens
-        ]
+        if self.send_context:
+            payload = [
+                {"word": t.text, "context": self._get_context(t, content_map)}
+                for t in tokens
+            ]
+        else:
+            payload = [{"word": t.text} for t in tokens]
 
         user_msg = _USER_TEMPLATE.format(
             max_occ=self.max_occ,
