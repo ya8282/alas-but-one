@@ -34,6 +34,7 @@ class JsonlFormatterTask(BaseTask):
                         for loc in token.locations
                     ],
                     'num_occurrences': len(token.locations),
+                    'uppercase_occurrences': token.uppercase_occurrences,
                     'misspelled': token.misspelled,
                     'confidence': token.confidence,
                     'suggestion': token.suggestion,

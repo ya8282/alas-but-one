@@ -1,0 +1,111 @@
+{
+  "stages": {
+    "baseline": {
+      "candidates": 2541,
+      "sample_precision": 0.109375,
+      "sample_candidates": 64,
+      "full_top_10": {
+        "candidates": 10,
+        "true_positives": 0,
+        "precision": 0.0,
+        "words": [
+          "abcd",
+          "acct",
+          "addr",
+          "adduser",
+          "adp",
+          "amqps",
+          "ams",
+          "androi",
+          "apac",
+          "api's"
+        ]
+      },
+      "known_prose_typos": {
+        "retained": 7,
+        "total": 7
+      }
+    },
+    "after_previous": {
+      "candidates": 1819,
+      "sample_precision": 0.12727272727272726,
+      "sample_candidates": 55,
+      "full_top_10": {
+        "candidates": 10,
+        "true_positives": 0,
+        "precision": 0.0,
+        "words": [
+          "api's",
+          "bundler",
+          "bundlers",
+          "ca's",
+          "casper",
+          "centos",
+          "cert",
+          "chunked",
+          "cmses",
+          "commonjs"
+        ]
+      },
+      "known_prose_typos": {
+        "retained": 7,
+        "total": 7
+      }
+    },
+    "possessive_fix": {
+      "candidates": 1740,
+      "sample_precision": 0.13725490196078433,
+      "sample_candidates": 51,
+      "full_top_10": {
+        "candidates": 10,
+        "true_positives": 0,
+        "precision": 0.0,
+        "words": [
+          "argv",
+          "booleans",
+          "bundler",
+          "bundlers",
+          "centos",
+          "cert",
+          "chunked",
+          "cmses",
+          "commonjs",
+          "conf"
+        ]
+      },
+      "known_prose_typos": {
+        "retained": 7,
+        "total": 7
+      }
+    },
+    "possessive_fix_plus_ignore_list": {
+      "candidates": 1702,
+      "sample_precision": 0.5384615384615384,
+      "sample_candidates": 13,
+      "full_top_10": {
+        "candidates": 10,
+        "true_positives": 4,
+        "precision": 0.4,
+        "words": [
+          "argv",
+          "booleans",
+          "bundler",
+          "continutity",
+          "elimiating",
+          "frailway",
+          "gov't",
+          "intermedeiary",
+          "ios",
+          "iot"
+        ]
+      },
+      "known_prose_typos": {
+        "retained": 7,
+        "total": 7
+      }
+    }
+  },
+  "ignored_words": 38,
+  "limitation": "Labeled sample is purposive and the ignore list was built from it, so sample precision gain from ignoring is by construction. Full top-10 words newly surfaced were labeled in this pass (labels_c8z.jsonl). Candidates tie at confidence 0.85 and rank alphabetically, so full-top-10 precision reflects ranking ties; full-corpus precision is not measured.",
+  "acceptance_passed": true
+}

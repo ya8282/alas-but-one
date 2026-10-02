@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict, List, Optional
 
 from tasks.factory import TaskFactory
@@ -27,6 +28,7 @@ class Pipeline:
         self._task_names: List[str] = []
         self._tasks = []
         self.stage_results: Dict[str, Any] = {}
+        self.stage_times: Dict[str, float] = {}
 
     def add_task(self, task_name: str) -> None:
         task = TaskFactory.create_task(
@@ -42,7 +44,9 @@ class Pipeline:
             if self.hooks:
                 result = self.hooks.fire_pre_stage(name, result)
 
+            start = time.perf_counter()
             result = task.run(result)
+            self.stage_times[name] = time.perf_counter() - start
             self.stage_results[name] = result
 
             if self.hooks:

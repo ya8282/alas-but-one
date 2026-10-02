@@ -9,7 +9,7 @@ class CsvFormatterTask(BaseTask):
     def __init__(self, settings_config, repo_config):
         super().__init__(settings_config, repo_config)
         self.field_names = [
-            'word', 'repo', 'locations', 'num_occurrences',
+            'word', 'repo', 'locations', 'num_occurrences', 'uppercase_occurrences',
             'misspelled', 'confidence', 'suggestion', 'ignore', 'label',
         ]
 
@@ -30,6 +30,7 @@ class CsvFormatterTask(BaseTask):
                     'repo': token.repo,
                     'locations': self._format_locations(token.locations),
                     'num_occurrences': len(token.locations),
+                    'uppercase_occurrences': token.uppercase_occurrences,
                     'misspelled': token.misspelled,
                     'confidence': token.confidence,
                     'suggestion': token.suggestion or '',

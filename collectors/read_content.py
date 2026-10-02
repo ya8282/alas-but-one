@@ -1,13 +1,22 @@
+import logging
 from typing import Dict, List
 from tasks.base_task import BaseTask
+
+logger = logging.getLogger(__name__)
+
 
 class ReaderTask(BaseTask):
     def run(self, paths: List[str]) -> Dict[str, str]:
         validated_paths = self.validate_input(paths)
         data = {}
         for path in validated_paths:
-            with open(path, 'r', encoding='utf-8') as f:
-                data[path] = f.read()
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    data[path] = f.read()
+            except UnicodeDecodeError:
+                logger.warning("Invalid UTF-8 in %s; replacing undecodable bytes", path)
+                with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                    data[path] = f.read()
         return self.validate_output(data)
 
     def validate_input(self, input_data: List[str]) -> List[str]:

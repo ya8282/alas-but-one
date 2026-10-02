@@ -56,6 +56,7 @@ class AIReviewer:
     def _is_reviewable(self, token: Token) -> bool:
         return (
             not token.ai_reviewed
+            and token.ignore != 'Y'
             and self.min_conf <= token.confidence <= self.max_conf
         )
 
@@ -67,7 +68,7 @@ class AIReviewer:
         if not content:
             return None
         lines = content.split('\n')
-        i = loc.line
+        i = loc.line - 1
         snippet = lines[max(0, i - 1): min(len(lines), i + 2)]
         return " | ".join(ln.strip() for ln in snippet if ln.strip()) or None
 

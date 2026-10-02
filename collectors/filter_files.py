@@ -5,7 +5,7 @@ from tasks.base_task import BaseTask
 class CollectorTask(BaseTask):
     def __init__(self, settings_config: Dict[str, Any], repo_config: Dict[str, Any]):
         super().__init__(settings_config, repo_config)
-        self.filename_re = r'\.(txt|rst)$'
+        self.filename_re = r'\.(txt|rst|md)$'
 
     def run(self, directory: str) -> List[str]:
         input_data = self.validate_input(directory)

@@ -1,0 +1,19 @@
+{
+  "invocation": "PYTHONPATH=/private/tmp/alas-installed-deps /Users/ccho/.pyenv/versions/3.12.7/bin/python3 tests/capture_baseline.py --output tests/data/baseline.jsonl",
+  "working_directory": "alas-but-one",
+  "python": "3.12.7",
+  "pyspellchecker": "0.8.1",
+  "maxOccurrences": 3,
+  "approved_terms": [
+    "mongodb"
+  ],
+  "ai_enabled": false,
+  "model": null,
+  "mongo_connection": false,
+  "baseline_line_convention": "zero-based",
+  "candidates": 38,
+  "source_archive_sha256": "03bbe471d3b5088b30aa2c6003ab291636ab9d64029d16887b4a6860b4a23b7b",
+  "sample_sha256": "b5ddf6044325e322e48f3106da91d08c2888848cc9de8a730a0ba1b531156da3",
+  "environment_note": "Installed pyspellchecker exports overwritten by unrelated spellchecker 0.4; temporary copy restores exports only; all remaining files match installed distribution RECORD hashes.",
+  "baseline_sha256": "a2f1e94c9b6c56543cbab87fba7859a6a1356e369502a7bfbe08176de2fb9914"
+}

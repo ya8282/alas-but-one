@@ -1,6 +1,5 @@
 {
   "settings": {
-    "repo_base_full_path": "/home/user/dev/",
     "maxOccurrences": 1,
     "confidence_threshold": 0.3,
 
@@ -27,8 +26,9 @@
   "repositories": {
     "golang": {
       "name": "Golang Driver Docs",
-      "relative_path": "docs-golang/",
-      "source_dir": "source/"
+      "text_format": "rst",
+      "path": "~/dev/docs-golang",
+      "source_dir": "source"
     }
   },
 

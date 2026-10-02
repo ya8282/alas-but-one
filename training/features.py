@@ -53,7 +53,7 @@ def extract(token: Token) -> List[float]:
 
     word_length = min(len(word) / 20.0, 1.0)
     has_digits = 1.0 if any(c.isdigit() for c in word) else 0.0
-    is_all_upper = 1.0 if (word.isupper() and len(word) > 1) else 0.0
+    is_all_upper = token.uppercase_ratio
     is_short = 1.0 if len(word) <= 2 else 0.0
 
     return [

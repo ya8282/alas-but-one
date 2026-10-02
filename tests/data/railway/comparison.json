@@ -1,0 +1,53 @@
+{
+  "corpus": {
+    "before_candidates": 2541,
+    "after_candidates": 1819,
+    "candidate_reduction": 722,
+    "documents": 411
+  },
+  "review_sample": {
+    "baseline": {
+      "actionable_candidates": 61,
+      "true_positives": 7,
+      "false_positives": 54,
+      "precision": 0.11475409836065574,
+      "top_10": {
+        "candidates": 10,
+        "true_positives": 0,
+        "precision": 0.0
+      }
+    },
+    "after": {
+      "actionable_candidates": 50,
+      "true_positives": 7,
+      "false_positives": 43,
+      "precision": 0.14,
+      "top_10": {
+        "candidates": 10,
+        "true_positives": 0,
+        "precision": 0.0
+      }
+    },
+    "labeled_words": 70
+  },
+  "full_queue_top_10": {
+    "baseline": {
+      "candidates": 10,
+      "true_positives": 0,
+      "precision": 0.0
+    },
+    "after": {
+      "candidates": 10,
+      "true_positives": 0,
+      "precision": 0.0
+    }
+  },
+  "known_prose_typos": {
+    "retained": 7,
+    "total": 7,
+    "retention": 1.0
+  },
+  "full_corpus_precision": null,
+  "limitation": "Purposive labeled sample of leading candidates plus known typos; full-corpus precision is not measured.",
+  "acceptance_passed": true
+}

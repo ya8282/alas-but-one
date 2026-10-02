@@ -1,0 +1,39 @@
+{"word": "block", "label": "false_positive", "category": "non_prose", "source_lines": [12]}
+{"word": "code", "label": "false_positive", "category": "non_prose", "source_lines": [12]}
+{"word": "codenoise", "label": "false_positive", "category": "non_prose", "source_lines": [15]}
+{"word": "commentnoise", "label": "false_positive", "category": "non_prose", "source_lines": [21]}
+{"word": "continuednoise", "label": "false_positive", "category": "non_prose", "source_lines": [22]}
+{"word": "definately", "label": "true_positive", "category": "prose_typo", "source_lines": [34]}
+{"word": "destinationnoise", "label": "false_positive", "category": "non_prose", "source_lines": [33]}
+{"word": "guide", "label": "false_positive", "category": "ordinary_prose", "source_lines": [3, 33]}
+{"word": "here", "label": "false_positive", "category": "ordinary_prose", "source_lines": [34]}
+{"word": "hidden", "label": "false_positive", "category": "non_prose", "source_lines": [21]}
+{"word": "http", "label": "false_positive", "category": "acronym", "source_lines": [6, 6, 6]}
+{"word": "https", "label": "false_positive", "category": "non_prose", "source_lines": [10, 33, 35]}
+{"word": "inlinenoise", "label": "false_positive", "category": "non_prose", "source_lines": [8]}
+{"word": "lasttypoo", "label": "true_positive", "category": "prose_typo", "source_lines": [37]}
+{"word": "linenos", "label": "false_positive", "category": "non_prose", "source_lines": [13]}
+{"word": "literalnoise", "label": "false_positive", "category": "non_prose", "source_lines": [19]}
+{"word": "mispeled", "label": "true_positive", "category": "prose_typo", "source_lines": [26]}
+{"word": "mongodb", "label": "false_positive", "category": "approved_term", "source_lines": [7]}
+{"word": "note", "label": "false_positive", "category": "non_prose", "source_lines": [24]}
+{"word": "occurrance", "label": "true_positive", "category": "prose_typo", "source_lines": [33]}
+{"word": "optionnoise", "label": "false_positive", "category": "non_prose", "source_lines": [15]}
+{"word": "prose", "label": "false_positive", "category": "ordinary_prose", "source_lines": [26]}
+{"word": "python", "label": "false_positive", "category": "non_prose", "source_lines": [12]}
+{"word": "read", "label": "false_positive", "category": "ordinary_prose", "source_lines": [8]}
+{"word": "recieve", "label": "true_positive", "category": "prose_typo", "source_lines": [30]}
+{"word": "retreive", "label": "true_positive", "category": "prose_typo", "source_lines": [1]}
+{"word": "review", "label": "false_positive", "category": "ordinary_prose", "source_lines": [3]}
+{"word": "see", "label": "false_positive", "category": "ordinary_prose", "source_lines": [33]}
+{"word": "seperate", "label": "true_positive", "category": "prose_typo", "source_lines": [31]}
+{"word": "targetnoise", "label": "false_positive", "category": "non_prose", "source_lines": [10]}
+{"word": "test", "label": "false_positive", "category": "non_prose", "source_lines": [10, 33, 35]}
+{"word": "the", "label": "false_positive", "category": "ordinary_prose", "source_lines": [8]}
+{"word": "this", "label": "false_positive", "category": "ordinary_prose", "source_lines": [17]}
+{"word": "urlnoise", "label": "false_positive", "category": "non_prose", "source_lines": [35]}
+{"word": "use", "label": "false_positive", "category": "ordinary_prose", "source_lines": [17, 34]}
+{"word": "value", "label": "false_positive", "category": "ordinary_prose", "source_lines": [8]}
+{"word": "visit", "label": "false_positive", "category": "ordinary_prose", "source_lines": [35]}
+{"word": "warning", "label": "false_positive", "category": "non_prose", "source_lines": [28]}
+{"word": "example", "label": "false_positive", "category": "ordinary_prose", "source_lines": [17]}

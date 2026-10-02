@@ -1,0 +1,10 @@
+[
+  {
+    "word": "avilable",
+    "correction": "available",
+    "file": "sandbox/studio.md",
+    "line": 42,
+    "source_context": "The configuration page allows you to customize the parameters used by the [`/link/token/create`](/docs/api/link/#linktokencreate) call used by **Launch Link** (including important parameters like `products`, which can impact the set of institutions available in Link), as well as the [`/sandbox/public_token/create`](/docs/api/sandbox/#sandboxpublic_tokencreate) overrides used by **Skip Link**. Changing configuration here does not affect your integration; it only changes the calls Sandbox Studio makes. For more details on the configuration options avilable here, see the documentation for [`/link/token/create`](/docs/api/link/#linktokencreate). ",
+    "review": "Manually confirmed; not an exhaustive review of the scan."
+  }
+]
