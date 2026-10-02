@@ -40,5 +40,11 @@
     "correction": "specifying",
     "file": "builds/build-configuration.md",
     "line": 108
+  },
+  {
+    "word": "bundler",
+    "correction": "bundle",
+    "file": "guides/symfony.md",
+    "line": 219
   }
 ]
