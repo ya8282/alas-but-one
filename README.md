@@ -39,6 +39,8 @@ Each repository names the directory to walk with `path`: absolute, `~`-prefixed,
 
 The config file is `./config.json` by default. Point both `alas.py` and `save_ignore_list.py` elsewhere with `ABO_CONFIG=/path/to/config.json`, or pass `--config PATH` to `alas.py`.
 
+`--log FILE` (or `settings.log_file`; `--log` wins, relative `log_file` resolves against the config file's directory) writes a DEBUG log of each stage's item count and elapsed time and each AI batch's raw response or failure. Stdout is unchanged; with neither set, no log file is created.
+
 Add as many repositories as needed. Run all of them at once or target one with `--repo`.
 
 Without a repository `text_format` setting, `.rst` files use RST masking, `.md` files use Markdown masking, and `.txt` files remain plain text. Set `"text_format": "rst"`, `"text_format": "markdown"` or `"text_format": "plain"` to apply that choice to all supported extensions. Other values fail validation. The bundled Golang configuration explicitly selects RST.
@@ -57,6 +59,7 @@ python alas.py --ai                          # AI review of borderline tokens
 python alas.py --parallel                    # process repos concurrently
 python alas.py --include-ignored             # audit or reverse prior ignore decisions
 python alas.py --verbose                     # per-stage token counts
+python alas.py --log run.log                 # debug log file (or settings.log_file)
 python alas.py --train labels.jsonl          # train ML classifier from labeled output
 python alas.py --config ~/abo.json           # config file elsewhere (or set ABO_CONFIG)
 ```

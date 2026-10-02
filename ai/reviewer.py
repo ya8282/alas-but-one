@@ -1,8 +1,10 @@
 import json
+import logging
 from typing import Dict, List, Optional
 
 from models.token import Token
 
+logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = (
     "You are a technical documentation quality reviewer. "
@@ -108,6 +110,7 @@ class AIReviewer:
         )
 
         raw = response.content[0].text.strip()
+        logger.debug("AI batch of %d words, raw response: %s", len(tokens), raw)
         # Strip markdown code fences if present
         if raw.startswith("```"):
             raw = raw.split("```")[1]
@@ -144,6 +147,7 @@ class AIReviewer:
             try:
                 self._review_batch(batch, content_map)
             except Exception as e:
+                logger.debug("AI batch %d failed: %r", i // self.batch_size + 1, e)
                 print(f"  [AI reviewer] batch {i // self.batch_size + 1} failed: {e}")
 
         reviewed = sum(1 for t in candidates if t.ai_reviewed)

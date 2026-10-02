@@ -1,9 +1,12 @@
 import csv
+import io
 import json
+import logging
 import os
 from pathlib import Path
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from unittest.mock import Mock, patch
 
 from tokenizer.tokenize_rst import TokenizerTask
@@ -574,6 +577,67 @@ class RegressionTests(unittest.TestCase):
                     with self.assertRaises(SystemExit):
                         alas.main()
                     load.assert_called_once_with(path)
+
+class LogFileTests(unittest.TestCase):
+    def setUp(self):
+        self._handlers = list(logging.getLogger().handlers)
+
+    def _main(self, directory, *flags, settings=None):
+        from contextlib import chdir
+        import alas
+        base = alas.load_config()
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, **(settings or {})}, 'modules': base['modules'], 'repositories': {
+            'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
+        buffer = io.StringIO()
+        with chdir(directory), redirect_stdout(buffer), patch('sys.argv', ['alas.py', *flags]), \
+                patch('alas.load_config', return_value=config), patch('alas.MLPredictor', return_value=Mock(available=False)), \
+                patch('matchers.ignore_list_matcher.load_words', return_value=set()):
+            alas.main()
+        self.assertEqual(logging.getLogger().handlers, self._handlers)
+        return buffer.getvalue()
+
+    def test_log_file_has_stage_timings_and_stdout_is_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'sample.txt').write_text('retreive ordinary')
+            log = os.path.join(directory, 'run.log')
+            plain = self._main(directory)
+            self.assertFalse(os.path.exists(log))
+            logged = self._main(directory, '--log', log)
+            self.assertEqual(plain, logged)
+            text = Path(log).read_text()
+            for stage in ['collector', 'reader', 'tokenizer', 'max_occurrence_matcher', 'spell_checker', 'ignore_list_matcher']:
+                self.assertRegex(text, rf'stage {stage}: count=\d+ elapsed=\d+\.\d{{3}}s')
+
+    def test_settings_log_file_is_config_relative_and_cli_wins(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'sample.txt').write_text('retreive')
+            from config import load_config
+            cfg = os.path.join(directory, 'c.json')
+            Path(cfg).write_text(json.dumps({'settings': {'log_file': 'rel.log'}}))
+            self.assertEqual(load_config(cfg)['settings']['log_file'], os.path.join(directory, 'rel.log'))
+            cli = os.path.join(directory, 'cli.log')
+            self._main(directory, '--log', cli, settings={'log_file': os.path.join(directory, 's.log')})
+            self.assertTrue(os.path.exists(cli))
+            self.assertFalse(os.path.exists(os.path.join(directory, 's.log')))
+
+    def test_ai_batch_raw_response_and_failure_are_logged(self):
+        import alas
+        with tempfile.TemporaryDirectory() as directory:
+            log = os.path.join(directory, 'ai.log')
+            handler = alas.setup_logging(log)
+            try:
+                t = Token('teh', 'test', [TokenLocation('a.md', 1)], confidence=0.5)
+                reviewer = AIReviewer({'ai': {'enabled': True}})
+                client = Mock()
+                client.messages.create.return_value.content = [Mock(text='RAW-NOT-JSON-123')]
+                with patch.object(reviewer, '_get_client', return_value=client), redirect_stdout(io.StringIO()):
+                    reviewer.run({'teh': t}, {'a.md': 'teh'})
+            finally:
+                alas.teardown_logging(handler)
+            text = Path(log).read_text()
+            self.assertIn('RAW-NOT-JSON-123', text)
+            self.assertIn('AI batch 1 failed', text)
+
 
 class AISendContextTests(unittest.TestCase):
     def _run(self, send_context=None):

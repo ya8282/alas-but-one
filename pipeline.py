@@ -1,8 +1,11 @@
+import logging
 import time
 from typing import Any, Dict, List, Optional
 
 from tasks.factory import TaskFactory
 from ai.hooks import HookRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class Pipeline:
@@ -47,6 +50,10 @@ class Pipeline:
             start = time.perf_counter()
             result = task.run(result)
             self.stage_times[name] = time.perf_counter() - start
+            logger.debug(
+                "stage %s: count=%s elapsed=%.3fs",
+                name, len(result) if hasattr(result, '__len__') else '?', self.stage_times[name],
+            )
             self.stage_results[name] = result
 
             if self.hooks:
