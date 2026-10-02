@@ -3,6 +3,7 @@ import argparse
 from contextlib import chdir
 from pathlib import Path
 import sys
+import time
 import tempfile
 import zipfile
 
@@ -39,14 +40,22 @@ def main():
         # The original collector excluded .md. Use the current collector for
         # both runs to compare identical documents, then archived original
         # tokenization/scoring for the baseline. No source files are rewritten.
-        paths = sorted(CollectorTask(settings, repo).run(str(corpus)))
-        content = ReaderTask(settings, repo).run(paths)
+        times = {}
+
+        def timed(name, task, data):
+            start = time.perf_counter()
+            result = task.run(data)
+            times[name] = time.perf_counter() - start
+            return result
+
+        paths = sorted(timed('collector', CollectorTask(settings, repo), str(corpus)))
+        content = timed('reader', ReaderTask(settings, repo), paths)
         content = {str(Path(path).relative_to(corpus)): text for path, text in content.items()}
         if not content:
             parser.error('corpus contains no supported documentation files')
-        tokens = TokenizerTask(settings, repo).run(content)
-        tokens = MaxOccurrenceMatcherTask(settings, repo).run(tokens)
-        tokens = SpellCheckerTask(settings, repo).run(tokens)
+        tokens = timed('tokenizer', TokenizerTask(settings, repo), content)
+        tokens = timed('max_occurrence_matcher', MaxOccurrenceMatcherTask(settings, repo), tokens)
+        tokens = timed('spell_checker', SpellCheckerTask(settings, repo), tokens)
         if args.ignore_file:
             from matchers.ignore_list_matcher import IgnoreListTask
             tokens = IgnoreListTask(settings, repo).run(tokens)
@@ -54,6 +63,8 @@ def main():
         with chdir(directory):
             path = JsonlFormatterTask(settings, repo).run(tokens)
             output.write_text(Path(path).read_text())
+    for stage, seconds in times.items():
+        print(f'    {stage}: {seconds:.2f}s')
     print(f'{len(content)} documents; {len(tokens)} candidates; {output}')
 
 

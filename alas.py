@@ -76,6 +76,9 @@ def run_repo(
 
     token_dict = pipeline.run(directory)
     content_map = pipeline.stage_results.get('reader', {})
+    if verbose:
+        for stage, seconds in pipeline.stage_times.items():
+            print(f"    {stage}: {seconds:.2f}s")
 
     # ML confidence override (if a trained model exists)
     if predictor.available:

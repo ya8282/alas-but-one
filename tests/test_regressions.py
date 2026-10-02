@@ -290,6 +290,25 @@ class RegressionTests(unittest.TestCase):
                         loader = _load_jsonl if output_format=='jsonl' else _load_csv
                         self.assertFalse(loader(path)['test']['mongodb'])
 
+    def test_verbose_prints_per_stage_timing_only_when_verbose(self):
+        import io
+        from contextlib import chdir, redirect_stdout
+        from alas import run_repo, load_config
+        config = load_config()
+        with tempfile.TemporaryDirectory() as directory, chdir(directory):
+            Path('sample.txt').write_text('retreive ordinary')
+            repo = {'name':'test','relative_path':'','source_dir':''}
+            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}}
+            outputs = {}
+            for verbose in [True, False]:
+                buffer = io.StringIO()
+                with redirect_stdout(buffer), patch('matchers.ignore_list_matcher.load_words', return_value=set()):
+                    run_repo('test', repo, settings, config['modules'], 'jsonl', False, Mock(available=False), verbose)
+                outputs[verbose] = buffer.getvalue()
+            for stage in ['collector','reader','tokenizer','max_occurrence_matcher','spell_checker','ignore_list_matcher']:
+                self.assertRegex(outputs[True], rf'    {stage}: \d+\.\d\ds')
+            self.assertNotRegex(outputs[False], r'\d\.\d\ds')
+
     def test_ai_payload_never_includes_approved_terms(self):
         approved = Token('mongodb', 'test', [], confidence=0.4, ignore='Y')
         typo = Token('retreive', 'test', [], confidence=0.4)
