@@ -12,9 +12,26 @@ from models.token_location import TokenLocation
 from ai.reviewer import AIReviewer
 from formatters.jsonl_formatter import JsonlFormatterTask
 from formatters.csv_formatter import CsvFormatterTask
+from collectors.read_content import ReaderTask
 
 
 class RegressionTests(unittest.TestCase):
+    def test_reader_keeps_universal_newlines(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'mixed.rst')
+            Path(path).write_bytes(b'a\r\nb\rc\n')
+            self.assertEqual(ReaderTask({}, {'name': 'test'}).run([path])[path], 'a\nb\nc\n')
+
+    def test_reader_tolerates_non_utf8_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'latin1.rst')
+            Path(path).write_bytes(b'caf\xe9 ok\n')
+            with self.assertLogs('collectors.read_content', 'WARNING') as logs:
+                content = ReaderTask({}, {'name': 'test'}).run([path])
+            self.assertIn('ok', content[path])
+            self.assertIn('\ufffd', content[path])
+            self.assertIn(path, logs.output[0])
+
     def test_source_lines_and_export_locations(self):
         content = 'retreive\n\nmispeled'
         tokens = TokenizerTask({}, {'name': 'test'}).run({'sample.rst': content})
