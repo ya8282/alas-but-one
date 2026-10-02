@@ -24,6 +24,17 @@ Respond with a JSON array, one object per word in the same order:
 "suggestion": "corrected word or null", "comment": "one-line reasoning"}}]"""
 
 
+def get_source_line(token: Token, content_map: Optional[Dict[str, str]]) -> Optional[str]:
+    """Stripped source line of the token's first location (1-based), or None."""
+    if not token.locations or not content_map:
+        return None
+    loc = token.locations[0]
+    lines = (content_map.get(loc.filename) or '').split('\n')
+    if not 1 <= loc.line <= len(lines):
+        return None
+    return lines[loc.line - 1].strip() or None
+
+
 class AIReviewer:
     """
     Sends borderline-confidence tokens to Claude for classification.

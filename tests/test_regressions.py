@@ -51,6 +51,24 @@ class RegressionTests(unittest.TestCase):
             finally:
                 os.chdir(previous)
 
+    def test_context_is_stripped_first_location_line(self):
+        content = {'sample.rst': 'intro\n\n   retreive  here  \nmispeled\nretreive again'}
+        tokens = TokenizerTask({}, {'name': 'test'}).run(content)
+        expected = {'retreive': 'retreive  here', 'mispeled': 'mispeled'}
+        with tempfile.TemporaryDirectory() as directory:
+            previous = os.getcwd()
+            try:
+                os.chdir(directory)
+                path = JsonlFormatterTask({}, {'name': 'test'}).run(tokens, content)
+                rows = [json.loads(line) for line in Path(path).read_text().splitlines()]
+                self.assertEqual({r['word']: r['context'] for r in rows if r['word'] in expected}, expected)
+                path = CsvFormatterTask({}, {'name': 'test'}).run(tokens, content)
+                with open(path) as file:
+                    rows = list(csv.DictReader(file))
+                self.assertEqual({r['word']: r['context'] for r in rows if r['word'] in expected}, expected)
+            finally:
+                os.chdir(previous)
+
     def test_ai_context_at_first_and_last_source_lines(self):
         reviewer = AIReviewer({})
         content = {'sample.rst': 'retreive\nneighbor\nmispeled'}

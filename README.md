@@ -70,6 +70,7 @@ Each run produces `<repo name>.jsonl` (or `.csv` with `--format csv`), one recor
   "word": "retreive",
   "repo": "My Docs",
   "locations": [{"file": "/path/to/file.rst", "line": 42}],
+  "context": "retreive the value",  // stripped source line of the first location
   "num_occurrences": 1,
   "uppercase_occurrences": 0,
   "misspelled": true,

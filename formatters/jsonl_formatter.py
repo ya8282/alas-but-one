@@ -3,6 +3,7 @@ from typing import Dict
 
 from tasks.base_task import BaseTask
 from models.token import Token
+from ai.reviewer import get_source_line
 
 
 class JsonlFormatterTask(BaseTask):
@@ -12,10 +13,11 @@ class JsonlFormatterTask(BaseTask):
 
     Each record includes all fields needed for review and ML training:
     word, repo, locations, num_occurrences, misspelled, confidence,
-    suggestion, ignore, label, ai_reviewed, ai_comment.
+    context (stripped first-location source line), suggestion, ignore, label,
+    ai_reviewed, ai_comment.
     """
 
-    def run(self, tokens: Dict[str, Token]) -> str:
+    def run(self, tokens: Dict[str, Token], content_map=None) -> str:
         validated = self.validate_input(tokens)
         repo_name = self.repo_config['name']
         output_file = f"{repo_name}.jsonl"
@@ -33,6 +35,7 @@ class JsonlFormatterTask(BaseTask):
                         {'file': loc.filename, 'line': loc.line}
                         for loc in token.locations
                     ],
+                    'context': get_source_line(token, content_map),
                     'num_occurrences': len(token.locations),
                     'uppercase_occurrences': token.uppercase_occurrences,
                     'misspelled': token.misspelled,

@@ -97,7 +97,7 @@ def run_repo(
     formatter = TaskFactory.create_task(
         formatter_key, effective_settings, repo_config, modules_config
     )
-    return formatter.run(token_dict)
+    return formatter.run(token_dict, content_map)
 
 
 def cmd_run(args, config: Dict) -> None:
