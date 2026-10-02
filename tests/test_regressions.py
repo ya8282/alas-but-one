@@ -552,6 +552,19 @@ class FileIgnoreListTests(unittest.TestCase):
             resolved = config['settings']['ignore_list']['file']
             self.assertEqual(os.path.realpath(resolved), os.path.realpath(os.path.join(directory, 'ignore.json')))
 
+    def test_possessive_folds_into_base_word(self):
+        tokens = TokenizerTask({}, {'name': 'test'}).run({'a.txt': "the API's role and API docs; it's\nmispeled's"})
+        self.assertEqual(tokens['api'].uppercase_occurrences, 2)
+        self.assertEqual(len(tokens['api'].locations), 2)
+        self.assertNotIn("api's", tokens)
+        self.assertIn('mispeled', tokens)
+
+    def test_railway_ignore_list_excludes_known_typos(self):
+        data = Path(__file__).parent / 'data' / 'railway'
+        ignored = set(json.loads((data / 'ignore.json').read_text())['Railway'])
+        typos = {t['word'] for t in json.loads((data / 'typos.json').read_text())}
+        self.assertFalse(ignored & typos)
+
 
 if __name__ == '__main__':
     unittest.main()

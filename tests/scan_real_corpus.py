@@ -14,6 +14,7 @@ def main():
     parser.add_argument('--corpus', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--baseline', action='store_true')
+    parser.add_argument('--ignore-file', help='File-backed ignore list (settings.ignore_list.file).')
     args = parser.parse_args()
     corpus = Path(args.corpus).resolve()
     output = Path(args.output).resolve()
@@ -32,6 +33,8 @@ def main():
         from matchers.spell_checker import SpellCheckerTask
         from formatters.jsonl_formatter import JsonlFormatterTask
         settings = {'maxOccurrences': 1}
+        if args.ignore_file:
+            settings['ignore_list'] = {'file': str(Path(args.ignore_file).resolve())}
         repo = {'name': 'Railway'}
         # The original collector excluded .md. Use the current collector for
         # both runs to compare identical documents, then archived original
@@ -44,6 +47,10 @@ def main():
         tokens = TokenizerTask(settings, repo).run(content)
         tokens = MaxOccurrenceMatcherTask(settings, repo).run(tokens)
         tokens = SpellCheckerTask(settings, repo).run(tokens)
+        if args.ignore_file:
+            from matchers.ignore_list_matcher import IgnoreListTask
+            tokens = IgnoreListTask(settings, repo).run(tokens)
+            tokens = {w: t for w, t in tokens.items() if t.ignore != 'Y'}
         with chdir(directory):
             path = JsonlFormatterTask(settings, repo).run(tokens)
             output.write_text(Path(path).read_text())

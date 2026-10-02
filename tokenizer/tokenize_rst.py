@@ -190,6 +190,8 @@ class TokenizerTask(BaseTask):
             lines = content.split('\n')
             for i, line in enumerate(lines, start=1):
                 for surface in re.findall(self.word_regex, line):
+                    if surface.lower().endswith("'s") and len(surface) > 3:
+                        surface = surface[:-2]  # possessive: score the base word
                     word = surface.lower()
                     if word in token_dict:
                         token = token_dict[word]
