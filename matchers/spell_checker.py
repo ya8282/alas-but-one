@@ -17,7 +17,7 @@ class SpellCheckerTask(BaseTask):
         for word, token in validated_tokens.items():
             token.misspelled = word in misspelled_set
             token.confidence, token.suggestion = compute_confidence(
-                word, token.misspelled, self.checker
+                word, token.misspelled, self.checker, token.uppercase_ratio
             )
 
         return self.validate_output(validated_tokens)

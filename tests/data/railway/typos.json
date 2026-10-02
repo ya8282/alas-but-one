@@ -1,0 +1,44 @@
+[
+  {
+    "word": "continutity",
+    "correction": "continuity",
+    "file": "deployments/reference.md",
+    "line": 148
+  },
+  {
+    "word": "elimiating",
+    "correction": "eliminating",
+    "file": "overview/advanced-concepts.md",
+    "line": 39
+  },
+  {
+    "word": "frailway",
+    "correction": "Railway",
+    "file": "platform/railway-metal.md",
+    "line": 29
+  },
+  {
+    "word": "intermedeiary",
+    "correction": "intermediary",
+    "file": "guides/add-a-cdn-using-cloudfront.md",
+    "line": 9
+  },
+  {
+    "word": "pracices",
+    "correction": "practices",
+    "file": "databases/troubleshooting/enotfound-redis-railway-internal.md",
+    "line": 85
+  },
+  {
+    "word": "sophistocated",
+    "correction": "sophisticated",
+    "file": "guides/github-actions-runners.md",
+    "line": 13
+  },
+  {
+    "word": "specifing",
+    "correction": "specifying",
+    "file": "builds/build-configuration.md",
+    "line": 108
+  }
+]

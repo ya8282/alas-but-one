@@ -1,0 +1,1477 @@
+{
+  "corpus_root": "/Volumes/Travel/Projects_2/docs-research/plaid/plaid_docs_markdown/docs",
+  "repo": "Plaid",
+  "settings": {
+    "maxOccurrences": 1,
+    "ai_review": false,
+    "database_writes": false
+  },
+  "files": [
+    {
+      "path": "account/activity.md",
+      "size": 5934,
+      "sha256": "83c0561bb8e7dcde8c3366e9683e8ce28b2a6c29fbacf493c094803ced95aafe"
+    },
+    {
+      "path": "account/billing.md",
+      "size": 31421,
+      "sha256": "4903cf89449bdbcaee6fede9e4a1ef5750941b47353520355bc928bedce95ad9"
+    },
+    {
+      "path": "account/resellers.md",
+      "size": 9453,
+      "sha256": "94988d5e65e1419b3177e9dfceb92225dc0fe7605fb5da562850382b3acbec8b"
+    },
+    {
+      "path": "account/security.md",
+      "size": 3121,
+      "sha256": "7753260a280bf4362021b408d42ee7caa32d92b103ccc793d82c2c2da30f29ec"
+    },
+    {
+      "path": "account/teams.md",
+      "size": 8334,
+      "sha256": "75df62d7e81ffb19184167600e39d98d8a2fb298130b8fd274ca8401fac36061"
+    },
+    {
+      "path": "account.md",
+      "size": 651,
+      "sha256": "d541f4d4a4e6b5197c81bce7f1fa04cd482b662cdab01ba13357609ccc3c3c67"
+    },
+    {
+      "path": "api/accounts.md",
+      "size": 38054,
+      "sha256": "0dafe751d0ec0d4191120d9164a0796eed8a796b4a6b678bfec4104123e3a4df"
+    },
+    {
+      "path": "api/consent.md",
+      "size": 6870,
+      "sha256": "6c2dcd95bac3b0bf296fa2129de08df2fdcf4edf9a5ff0cad121542675ab8960"
+    },
+    {
+      "path": "api/institutions.md",
+      "size": 79104,
+      "sha256": "7f9e4f1e40b9240085617c5b2a0618a987c6d73d58e517a9e04ea46b5f6a7c9d"
+    },
+    {
+      "path": "api/items.md",
+      "size": 62668,
+      "sha256": "2ed6917d48db205860d21c4e2d98c4631b716b9385ab857c0d54c41412b21410"
+    },
+    {
+      "path": "api/kyc-aml-users.md",
+      "size": 3858,
+      "sha256": "a03f4b49d9624eb465b94f8eee254aa7d3cc297cdc75c1e40a30c035af8aa680"
+    },
+    {
+      "path": "api/libraries.md",
+      "size": 2825,
+      "sha256": "d2c7401ab74b1a2a3888ba69747227cda8fb61d4a9c4d03f9c6f08be7759ba2d"
+    },
+    {
+      "path": "api/link.md",
+      "size": 97953,
+      "sha256": "a453b00a7887b114ad9714f3a5a28fc7ea5a2052bf2a6888659cdd46f875f48c"
+    },
+    {
+      "path": "api/oauth.md",
+      "size": 9533,
+      "sha256": "b28111eb1d670bfd684e8208885b9a590c6a562610775e307094cf6819ffc937"
+    },
+    {
+      "path": "api/partner.md",
+      "size": 20414,
+      "sha256": "e920ee26bffe8a26d96c37fb247e42ccd27749067fc047e8d88f8360a24fae69"
+    },
+    {
+      "path": "api/postman.md",
+      "size": 1227,
+      "sha256": "c59cd8bcd761020bc85f58c2817b5aa877c31324cfed68f5b2ea208b54a89402"
+    },
+    {
+      "path": "api/processor-partners.md",
+      "size": 347077,
+      "sha256": "171a79a728e76030a98e94c03dd06c792a73e9cd67cd10d5bb6a7660bb80dcac"
+    },
+    {
+      "path": "api/processors.md",
+      "size": 12481,
+      "sha256": "f3e5aa573fb176eeeb9f33fa24d4846cf9b1f08972c5a96bfd87bf7b5c76c318"
+    },
+    {
+      "path": "api/products/assets.md",
+      "size": 254025,
+      "sha256": "15fa14430e410464dee5965ac27e31fdcad288ea4bedca176085a79bb6105864"
+    },
+    {
+      "path": "api/products/auth.md",
+      "size": 62258,
+      "sha256": "f61899a5b9f77d689ee56643788d10dc2818b7a8c6d79c95e1f5a2d74419cacc"
+    },
+    {
+      "path": "api/products/beacon.md",
+      "size": 90995,
+      "sha256": "5caf3086a11c023fdb9312ad2b898afbf9cf81aaed4ccbf9d57dd7f371b8911a"
+    },
+    {
+      "path": "api/products/check.md",
+      "size": 325361,
+      "sha256": "51ecd367c3470e6071ea1f8d5f78c1572f13675e39d5624c5cfacdb6e0c3a7ce"
+    },
+    {
+      "path": "api/products/enrich.md",
+      "size": 15485,
+      "sha256": "d2f872af45f4506977bdf0a6120f9e7c8bc6c8e28f93cdb2c27b40a7e38e3817"
+    },
+    {
+      "path": "api/products/identity-verification.md",
+      "size": 231761,
+      "sha256": "9edc79f9389b01c3ad521d7e785d2bc2d0dae79ac5faebaa36e258adb1da64f1"
+    },
+    {
+      "path": "api/products/identity.md",
+      "size": 102391,
+      "sha256": "215826d299b0b593780991adfacd24cc60c2404773d2db577fd5b24d97907ef0"
+    },
+    {
+      "path": "api/products/income.md",
+      "size": 132919,
+      "sha256": "f470909b363e96077b6b1289656931782de30590a038cb5aed05aba3fbdab021"
+    },
+    {
+      "path": "api/products/investments-move.md",
+      "size": 47078,
+      "sha256": "9c473e121b2c10612fe8aaf6526bc246ef3ccc30b5c4272b5cee0730237ac6a6"
+    },
+    {
+      "path": "api/products/investments.md",
+      "size": 113581,
+      "sha256": "4dbbd2b4877bdbea13e8c00c1209897ff3673e81d9abb9b599401139ea4225aa"
+    },
+    {
+      "path": "api/products/layer.md",
+      "size": 12878,
+      "sha256": "9e944bc6f4a130bb5ee50f782406534eb8c836b5011faa165cdd91ad3ba285ed"
+    },
+    {
+      "path": "api/products/liabilities.md",
+      "size": 44177,
+      "sha256": "b4c69ba4f903167416466bed08270535ea091b810f7e8dee1288ce8950216c5b"
+    },
+    {
+      "path": "api/products/monitor.md",
+      "size": 110632,
+      "sha256": "a2d736b0a70621578e258837e5fc4020f54a219fab4d27d278fb32fd43f7002d"
+    },
+    {
+      "path": "api/products/payment-initiation.md",
+      "size": 97378,
+      "sha256": "173fc5df1baed72b579fdc63efdd330fd1f6d716461569676156321da9306a07"
+    },
+    {
+      "path": "api/products/signal.md",
+      "size": 51527,
+      "sha256": "53096d3f526ad4ac4677f6c6fc3f312c7fd82ef9d0cc7345eca2cb669c59873c"
+    },
+    {
+      "path": "api/products/statements.md",
+      "size": 7585,
+      "sha256": "425040d45a5d82ee392a178fd1404899f4b441c2fa17552009b754616f859279"
+    },
+    {
+      "path": "api/products/transactions.md",
+      "size": 155932,
+      "sha256": "e90d9e10088e9802486084fe00b07546265959e4ba16140313b7df892605fd9c"
+    },
+    {
+      "path": "api/products/transfer/account-linking.md",
+      "size": 25297,
+      "sha256": "0b37e9bb5c01ba735797dc81416de1f67c6a17992e24b66f2872a903ac86e404"
+    },
+    {
+      "path": "api/products/transfer/guaranteed-ach.md",
+      "size": 2252,
+      "sha256": "d552e2fd2f6b7462c3ac7c89ca9ec4a1b56e81aa73342916bdd1ae3693494d11"
+    },
+    {
+      "path": "api/products/transfer/initiating-transfers.md",
+      "size": 43660,
+      "sha256": "ae251fca93e06db77e522bef4758aa7d59c7a5c06741209d6db3d96018c233f7"
+    },
+    {
+      "path": "api/products/transfer/ledger.md",
+      "size": 24425,
+      "sha256": "632c9dbf0221126e84479d16b6bb8f0c90f13dd7dc50935658adad89465782a5"
+    },
+    {
+      "path": "api/products/transfer/metrics.md",
+      "size": 5181,
+      "sha256": "7b59d78aebdce720be94ee4ca3720b466fc6776461f444a79566d302c68832e0"
+    },
+    {
+      "path": "api/products/transfer/platform-payments.md",
+      "size": 19844,
+      "sha256": "6f90714a50777fe476e108556fdcf64b67f0193b433568a5bb296829744b7615"
+    },
+    {
+      "path": "api/products/transfer/reading-transfers.md",
+      "size": 63530,
+      "sha256": "bb55be10e1bc5e534375a2cbe18aa6fa21bd30083a348d0dcdcbc46b51271898"
+    },
+    {
+      "path": "api/products/transfer/recurring-transfers.md",
+      "size": 41065,
+      "sha256": "befb521d0c1a1ed28639c2dfe93e5162f3712c4f4f89b192cfd119abe6f57355"
+    },
+    {
+      "path": "api/products/transfer/refunds.md",
+      "size": 9564,
+      "sha256": "0c3f3172759f38926f41f61026cca46b154337301613ed3f3beae3b1c2bf3ef0"
+    },
+    {
+      "path": "api/products/transfer.md",
+      "size": 7973,
+      "sha256": "b1ab156eac9514760f0300b2ae02f542dcf271660a0f3cc2ce48c116ba580672"
+    },
+    {
+      "path": "api/products/virtual-accounts.md",
+      "size": 47878,
+      "sha256": "95adb52a9dfe8805f39401e3e2a4bd18dc6651cee87cfcafd129c3a5e084bf74"
+    },
+    {
+      "path": "api/sandbox.md",
+      "size": 63758,
+      "sha256": "a7a7eb9c56895e9c16bf16a9cece57232b04977cb4eadb237e9c6b17eb11b58c"
+    },
+    {
+      "path": "api/users/migrate-to-new-user-apis.md",
+      "size": 16924,
+      "sha256": "23488dc4d4d44d2c80f4d7dbb438cc3562f68333d7e44422fbb17d72b9318cc7"
+    },
+    {
+      "path": "api/users/user-apis.md",
+      "size": 6431,
+      "sha256": "52e30a3666ef9dd1cfe220eb9e6606ec34939f9e982549941e5be98997b7475d"
+    },
+    {
+      "path": "api/users.md",
+      "size": 44395,
+      "sha256": "4949419e5abc4ffe4a38bc2bbe5e54dd681afbf2c7641d891aedc329bb40d28b"
+    },
+    {
+      "path": "api/versioning.md",
+      "size": 14352,
+      "sha256": "c446841612c54fb030fa964187aa6259b53ac49ec96d0a59400936d9d3d50cc8"
+    },
+    {
+      "path": "api/webhooks/webhook-verification.md",
+      "size": 7694,
+      "sha256": "338794ba70f16539fd447fb6f8ed15f33b60f10939ef20c98f9db36e75cf7f44"
+    },
+    {
+      "path": "api/webhooks.md",
+      "size": 6276,
+      "sha256": "0db2561a4ee1248198a47dd2db7b6484f015087c43f45eb750b2d79813c15f92"
+    },
+    {
+      "path": "api.md",
+      "size": 5521,
+      "sha256": "56c4074a76cdc9a889f1a39f5d660c446f85111e059aa8c6dd3ac261a8d76168"
+    },
+    {
+      "path": "assets/add-to-app.md",
+      "size": 19040,
+      "sha256": "a47842a5945e1356e7c72977fd909737d0135195245532ecfd68b3124ad05072"
+    },
+    {
+      "path": "assets/partnerships/alloy.md",
+      "size": 10331,
+      "sha256": "a05afcf7ede2979ff7140d7742387bf7e11348aed823279461b73b6c74cfef94"
+    },
+    {
+      "path": "assets/partnerships/ocrolus.md",
+      "size": 10797,
+      "sha256": "c9eeff4806187efe16a9554704be95e66b9d894d6f46b63383f2f1429cdcde8b"
+    },
+    {
+      "path": "assets/partnerships.md",
+      "size": 647,
+      "sha256": "03a64493da6696f709c5272c62a9912b4bb99b4934dd46c4a324bf18ebd3ec98"
+    },
+    {
+      "path": "assets.md",
+      "size": 21246,
+      "sha256": "e175a3cb06e9f378c0dc30d8583935efd06720d07e0c09857fae47825cfa7c4c"
+    },
+    {
+      "path": "auth/add-to-app.md",
+      "size": 14268,
+      "sha256": "6f045c71671a670ac012d6bf2636c125f58eb8bcf5078b785f59b209b86fdeb6"
+    },
+    {
+      "path": "auth/coverage/automated.md",
+      "size": 13044,
+      "sha256": "b9d12da5a86a5697bc17331b24ab93a0c49d534c697352495a6c3ed96a1bf6fd"
+    },
+    {
+      "path": "auth/coverage/database-auth.md",
+      "size": 12051,
+      "sha256": "26605dea64212cd168b64601aea8fbccaebd3771dfa75ae8da973bac0dfe714a"
+    },
+    {
+      "path": "auth/coverage/database.md",
+      "size": 15601,
+      "sha256": "1081c980e5bc0a8bb17682b6b25c936afbf98544b8605c437eafb6c3576b5bf5"
+    },
+    {
+      "path": "auth/coverage/flow-options.md",
+      "size": 6969,
+      "sha256": "e318b32c4d26456747ca1d52bef982b05a8f5091560c2e0c526bb9437ae24a34"
+    },
+    {
+      "path": "auth/coverage/instant.md",
+      "size": 11177,
+      "sha256": "faeedc16d10f8a149b0de14e9ce468cad3c53291a26530d9e55a000abcd8ce53"
+    },
+    {
+      "path": "auth/coverage/microdeposit-events.md",
+      "size": 6298,
+      "sha256": "5d45501b243142d22177a75dbf0e125c2a07ac96654946364b73b13e6dfb87e4"
+    },
+    {
+      "path": "auth/coverage/same-day-link-best-practices.md",
+      "size": 4509,
+      "sha256": "eb769f0729abf29fb381ffc14bae9bc8a3f531aaa44bb4b95ef46c22c8d7f896"
+    },
+    {
+      "path": "auth/coverage/same-day.md",
+      "size": 23059,
+      "sha256": "777a63868c50e4c41396e6175a2d2e6b4baca0c51aed588413d7bdb57b1d37ba"
+    },
+    {
+      "path": "auth/coverage/testing.md",
+      "size": 9642,
+      "sha256": "267b84399adfc01d74bfd0c8e1e13d6ef80fbfed47e71566d3c159c33af6b78f"
+    },
+    {
+      "path": "auth/coverage.md",
+      "size": 6450,
+      "sha256": "cb7f2fa12492ec734cfdb279766fafbc6617715c2050e3402f367797d93e9048"
+    },
+    {
+      "path": "auth/partnerships/achq.md",
+      "size": 11341,
+      "sha256": "262ecce35ac3da90cd9052ea08d0c7a9ba4e65ab97f731bda41fd111ed033b55"
+    },
+    {
+      "path": "auth/partnerships/adp-roll.md",
+      "size": 11499,
+      "sha256": "6b3ab390eb78b8e8288478b1262816ea71de8991ef246dc7c821f9a54dbaf497"
+    },
+    {
+      "path": "auth/partnerships/adyen.md",
+      "size": 11470,
+      "sha256": "5957010d883ca8ec81d53d763e7e02d29f9a7609a263ce1f2607c04cd802b549"
+    },
+    {
+      "path": "auth/partnerships/alpaca.md",
+      "size": 11325,
+      "sha256": "462d1bcf9dd0588973af262ea2eb128bd3c4ece1b413e131605c7331b5fe20cf"
+    },
+    {
+      "path": "auth/partnerships/ansa.md",
+      "size": 11525,
+      "sha256": "583fa0a826a9c19a3e03afee46b173262209fd7dfd79aa002f37b22aabb87619"
+    },
+    {
+      "path": "auth/partnerships/apex-clearing.md",
+      "size": 12263,
+      "sha256": "e3fa1987b76dac5b47cbed27dc8a5a2521428482576a7ac3f026a73a8faf468f"
+    },
+    {
+      "path": "auth/partnerships/astra.md",
+      "size": 11216,
+      "sha256": "917d001878444fe029134498baa95d53f071e93463dd20d8bf04b83a703ec83d"
+    },
+    {
+      "path": "auth/partnerships/atomic.md",
+      "size": 11377,
+      "sha256": "b7da3d4a7e837b84257c1bf38a6b2625c10dea133fcddfc4e4a8c362a35085fa"
+    },
+    {
+      "path": "auth/partnerships/bakkt.md",
+      "size": 11708,
+      "sha256": "0f2cc8c2f24739994c2e4f1a37aa47f2919ba007db074d04b90a45578ac62012"
+    },
+    {
+      "path": "auth/partnerships/bond.md",
+      "size": 11598,
+      "sha256": "ee7a7458c0cfc17a72ac4125ae9800d4b6c6d872c497e7952c56854312874b04"
+    },
+    {
+      "path": "auth/partnerships/check.md",
+      "size": 11409,
+      "sha256": "5f29906d7b3a9c03e692692629eea52e87f18a86530fa4d6f0c5990073069a06"
+    },
+    {
+      "path": "auth/partnerships/checkbook.md",
+      "size": 11434,
+      "sha256": "d45db792f66d9b68a80bca9d18ff46f4b05a2c76961b27dd3cfc62985567939a"
+    },
+    {
+      "path": "auth/partnerships/checkout.md",
+      "size": 11883,
+      "sha256": "bd364aed19fa0b7b78d7d2368fb3e9812104318e8ac83bba6b6af4aae0fdf760"
+    },
+    {
+      "path": "auth/partnerships/drivewealth.md",
+      "size": 11628,
+      "sha256": "ad33e15b45321895bfdb7f94f50d961d5ded6dd0a2411733c0e06b7982ae0e66"
+    },
+    {
+      "path": "auth/partnerships/dwolla.md",
+      "size": 13609,
+      "sha256": "beddc2d84e90bc0ed16864d6b38d8a696bca4e821a749e8a3960cdf9257baaf0"
+    },
+    {
+      "path": "auth/partnerships/finix.md",
+      "size": 12445,
+      "sha256": "35cfd92c506956988c0e199bfeb6b05bd9e46d5772deff0890d95687d97c5e7a"
+    },
+    {
+      "path": "auth/partnerships/frame.md",
+      "size": 12110,
+      "sha256": "45ee39570a18ea5fe36f48599a2faae981a1c99626aa4405851da039be88e1cc"
+    },
+    {
+      "path": "auth/partnerships/galileo.md",
+      "size": 11575,
+      "sha256": "d1571d14438a6f78b7399cb128ee6d9238b799189cb41956042beedde6255f4d"
+    },
+    {
+      "path": "auth/partnerships/gusto.md",
+      "size": 11769,
+      "sha256": "810cd16bf3b69da37345f86d4a9f2ab9a8d0a9d52e73e171ceabce13c1555571"
+    },
+    {
+      "path": "auth/partnerships/highnote.md",
+      "size": 11438,
+      "sha256": "0a540158fcec0193304d61b2ec4a3d08957620021a7439c25e4e20a37c6db1d2"
+    },
+    {
+      "path": "auth/partnerships/lithic.md",
+      "size": 11113,
+      "sha256": "be892f1a9d3ed1957d99e92c3b278fc41bc7c30b8ea19d6cffa71949f3de88b6"
+    },
+    {
+      "path": "auth/partnerships/marqeta.md",
+      "size": 12136,
+      "sha256": "711cd4be17b598e899aca049be5ca440b7a7fc67abfa0f58803f0d55c348f100"
+    },
+    {
+      "path": "auth/partnerships/modern-treasury.md",
+      "size": 12212,
+      "sha256": "643a399679724381d88ab0c70334031dccb6bef8dd54444af2da8e29a12e61ac"
+    },
+    {
+      "path": "auth/partnerships/moov.md",
+      "size": 11385,
+      "sha256": "233b814ba8dda63a2f4735bf9e968cb850061c43c616e182ac33918ff5590cb1"
+    },
+    {
+      "path": "auth/partnerships/open-ledger.md",
+      "size": 11098,
+      "sha256": "be84e950b5926c7c5d6258e6fcbc6e44d3e463dc724a822e911400f8c3363267"
+    },
+    {
+      "path": "auth/partnerships/riskified.md",
+      "size": 11509,
+      "sha256": "a4222f6453918f424ca6c3601a712edaa20b688051241376556a28f6a123cc6f"
+    },
+    {
+      "path": "auth/partnerships/sardine.md",
+      "size": 11479,
+      "sha256": "f8df57deede7a8a04c3d6b7a9d7eac0349347653cd32afb28ba5c1bc6054c596"
+    },
+    {
+      "path": "auth/partnerships/scribeup.md",
+      "size": 11977,
+      "sha256": "b6c42bebfc59a33788b40ba1c8f4d3ecc793c3f2d760a0b83d786e8d5c166665"
+    },
+    {
+      "path": "auth/partnerships/seamless-ach.md",
+      "size": 11951,
+      "sha256": "6732adaaeeb44bfc378e96168f2ffaefc1f8922ee6a7d6d255160d5fae655beb"
+    },
+    {
+      "path": "auth/partnerships/sila-money.md",
+      "size": 12306,
+      "sha256": "bb0ab578fece91b7b2a0183cd0d5298ebb1aa0d276ad7586e8f3a678b4ad1ef2"
+    },
+    {
+      "path": "auth/partnerships/square.md",
+      "size": 1978,
+      "sha256": "a4b3fb53c39bf6f301a50950318f0079b897932f53bae843f4452e75a11d6784"
+    },
+    {
+      "path": "auth/partnerships/straddle.md",
+      "size": 12225,
+      "sha256": "d924bad19c6601295cad84f91cf0854db947a70ec74768e901f4111d553453a9"
+    },
+    {
+      "path": "auth/partnerships/stripe.md",
+      "size": 17800,
+      "sha256": "61d54c879146ac91129d950fababc79bb2c2493e0300133daa3fe4921fcf6d2b"
+    },
+    {
+      "path": "auth/partnerships/svb.md",
+      "size": 12060,
+      "sha256": "ed224ce94f282b69c81f0fb2252c9b3079d22d598d6bffec789e6e51b3e07d80"
+    },
+    {
+      "path": "auth/partnerships/taba-pay.md",
+      "size": 11739,
+      "sha256": "dc6b14f19c312a814e202bd9ec2e697295cb809897a6a097383235d07adb8214"
+    },
+    {
+      "path": "auth/partnerships/treasury-prime.md",
+      "size": 11650,
+      "sha256": "ba355f4a937d4437d82da7afdfca9bb45d92f81a3dd3e438b4f8be68655aa15b"
+    },
+    {
+      "path": "auth/partnerships/unit.md",
+      "size": 11183,
+      "sha256": "403ad093442515878fc5ad9546e2c976d01d37a9d21e0408446a5fe50a06738e"
+    },
+    {
+      "path": "auth/partnerships/vopay.md",
+      "size": 11612,
+      "sha256": "c40ab988c57c1eae9e2b36394f9ce180bfdae40ac14a7447bccdbfc6d5825e9c"
+    },
+    {
+      "path": "auth/partnerships/webull.md",
+      "size": 11386,
+      "sha256": "35001b45b8f9c4d480d94f708e43bc08aa5747c5d82791f14011968ad99abd23"
+    },
+    {
+      "path": "auth/partnerships/wedbush.md",
+      "size": 11418,
+      "sha256": "672b69dbdc303a0d4910b04bb662899539c34f63f8baa366f5b73d561ec385e0"
+    },
+    {
+      "path": "auth/partnerships/zero-hash.md",
+      "size": 11570,
+      "sha256": "b81e65cf5449de28987411d01ad57a77b64abedc216bc603621464e7ca980347"
+    },
+    {
+      "path": "auth/partnerships.md",
+      "size": 8059,
+      "sha256": "94a491e6aa801e8541ad80ca253e9fc3244b317d85c3c33559b5b4eea1ba5721"
+    },
+    {
+      "path": "auth/pay-by-bank-ux.md",
+      "size": 5079,
+      "sha256": "70633ce4a80463f4028363a24bca8c5c5ca46c56e1a3c117d2d8390b01fae236"
+    },
+    {
+      "path": "auth.md",
+      "size": 27774,
+      "sha256": "d95deb662993c299d589b9cbcfb97a5daeda9861d95e691d8966d4c1f67a9740"
+    },
+    {
+      "path": "balance/add-to-app.md",
+      "size": 15684,
+      "sha256": "cd1688affd02868cf99a1facd3c312c5b8c910e69bf6b8d099164ae3430afb64"
+    },
+    {
+      "path": "balance/migration-guide.md",
+      "size": 3299,
+      "sha256": "3e9fb57295970f26ff30c2cb363606b5c954110c7873ff435c769aeb736003e9"
+    },
+    {
+      "path": "balance.md",
+      "size": 12572,
+      "sha256": "9dac19be5fd5306514e3b4e91f50bb722eb290cea74df22d0e854ad0af103cde"
+    },
+    {
+      "path": "changelog.md",
+      "size": 2110,
+      "sha256": "582cdb80b680bfb925c54be42808e4e1477048284eca0026fe18de7d968cde69"
+    },
+    {
+      "path": "check/add-to-app.md",
+      "size": 19126,
+      "sha256": "596aa9d546d3e7c6bb03db684f63f6db122964ecd9735552c92737c55cb98b7f"
+    },
+    {
+      "path": "check/migrate-from-assets.md",
+      "size": 5180,
+      "sha256": "bde0446f50c54c1f3d8b5ee084616730869da550b0a7e8982b6f9ecf40209daa"
+    },
+    {
+      "path": "check/migrate-from-cash-flow-updates.md",
+      "size": 5099,
+      "sha256": "407f7ee4574ba0a17a070ec10306bdca34e9f953e5c59a71f0a351baadabbdde"
+    },
+    {
+      "path": "check/migrate-from-income.md",
+      "size": 7770,
+      "sha256": "4a63108182db8bd2d92e1b86b738684340cb13443d89e8127b749f04eab7dd22"
+    },
+    {
+      "path": "check/migrate-from-transactions.md",
+      "size": 8609,
+      "sha256": "b55e539f5b76d928ad3a7f727136dd537140117456dafc7c5249c617a25639ea"
+    },
+    {
+      "path": "check/oauth-sharing.md",
+      "size": 2440,
+      "sha256": "58629eb9821c165f767ee2ae746b9e220bb7831308475af7253de5edd9eb4e25"
+    },
+    {
+      "path": "check/onboard-users-with-layer.md",
+      "size": 3840,
+      "sha256": "7739e5cf87c567ee2bfcb7f6b90b6e500a8a9567f7ef68157893c7300a6a6c31"
+    },
+    {
+      "path": "check/servicing.md",
+      "size": 9346,
+      "sha256": "c8ac1b0a6609e9ac636c3ca58bafdf42f49e7a40242adebd5045658c82ea821e"
+    },
+    {
+      "path": "check.md",
+      "size": 18673,
+      "sha256": "6d95f3de968077881340b8d0d99987f675edfe003e2068d1e2a9540eca732637"
+    },
+    {
+      "path": "enrich.md",
+      "size": 3930,
+      "sha256": "17e3ff47912443d703516119734c227a39d9986fc57975a3cf2b32ab6c85ed37"
+    },
+    {
+      "path": "errors/api.md",
+      "size": 2720,
+      "sha256": "a5febd383166290f128a1f6864e5a1ef06cf027213fce8c09301a3d4bb25f29a"
+    },
+    {
+      "path": "errors/assets.md",
+      "size": 4550,
+      "sha256": "5fd854419fd2450d4e5cafa925fedc18fa9c1f1d29b3dd2189933f064dd38858"
+    },
+    {
+      "path": "errors/check-report-webhook.md",
+      "size": 1863,
+      "sha256": "5f2b56f7060a6f7cfee54dae53d9b72e9868a891ec4b1d2bca053dda4b9c2379"
+    },
+    {
+      "path": "errors/check-report.md",
+      "size": 4465,
+      "sha256": "77eb2c447d417c3d9700499fac34e0595704dd431fa4c9221b831605b3cf4ad8"
+    },
+    {
+      "path": "errors/cra-monitoring.md",
+      "size": 1848,
+      "sha256": "461dc3cc95b1965c6ac150e12e6ceaac5a471ed65366b3e48634b5af39b550d0"
+    },
+    {
+      "path": "errors/income.md",
+      "size": 3588,
+      "sha256": "e71246c15ae87614ae7778fcbb93a7e9dd7a6eb20b4e54bbbb24ae24b74da846"
+    },
+    {
+      "path": "errors/institution.md",
+      "size": 7035,
+      "sha256": "1d20e8a6745425e176a13a15ced101ea150913399320ad381014715bc25c8223"
+    },
+    {
+      "path": "errors/invalid-input.md",
+      "size": 16485,
+      "sha256": "511ec739f2bba275c410f53c966e797ef780d24cca58cd38c0bb2b39073b9770"
+    },
+    {
+      "path": "errors/invalid-request.md",
+      "size": 7090,
+      "sha256": "eadaf756aa581a171085c98277bfeb0d35a45136a0f0e2617338eeea4ae70a1f"
+    },
+    {
+      "path": "errors/invalid-result.md",
+      "size": 1242,
+      "sha256": "0b810664feea06b70598719d2e796c09f5a39e36d43533b2f33dd5947cfc070b"
+    },
+    {
+      "path": "errors/item.md",
+      "size": 36749,
+      "sha256": "e42f2d1d3d00426f80cb767f59062891f1c2015daa8e889987d838bccc5c3d59"
+    },
+    {
+      "path": "errors/microdeposits.md",
+      "size": 856,
+      "sha256": "a2e40b7c5116bcbf626e29535dbc4ca382e33b3b4d81b960a73e73ab2b4e7058"
+    },
+    {
+      "path": "errors/oauth.md",
+      "size": 2795,
+      "sha256": "fca6ecc4afde83e0e20d0dd7fc8d61f4acfb5ab3f6c0c54f2617827ede489697"
+    },
+    {
+      "path": "errors/partner.md",
+      "size": 4098,
+      "sha256": "3251af8d8f1a02052a0976c50c465d4f96fe68e81621235698a808d0a54d4a6e"
+    },
+    {
+      "path": "errors/payment.md",
+      "size": 5473,
+      "sha256": "20c6d87ed44b8b8e8140ce39107d639e70ba1431fde6c16d8aa762015da1c60b"
+    },
+    {
+      "path": "errors/rate-limit-exceeded.md",
+      "size": 13213,
+      "sha256": "4ba6e7c78c6af182847f86676393721f4001e5d696e7577ffeb48cd70956552b"
+    },
+    {
+      "path": "errors/recaptcha.md",
+      "size": 2650,
+      "sha256": "b295477edffe934f966fbca0256971e27c9963809cce4b7cc02095ec752f6b20"
+    },
+    {
+      "path": "errors/sandbox.md",
+      "size": 1343,
+      "sha256": "4e39c62b0a136f6a739aa15418d421e7f31148c82115ddd2dc14c9e783967b9d"
+    },
+    {
+      "path": "errors/signal.md",
+      "size": 4928,
+      "sha256": "25d9b2d43f8f5668196a75f7e5b9d38c10c89c9515f3a864a98f5e8d6ddaf385"
+    },
+    {
+      "path": "errors/transactions.md",
+      "size": 1261,
+      "sha256": "63dbf8f112529d0c6f05306feb7d698cc4d0d232d23a80f39792c505ba3bfe09"
+    },
+    {
+      "path": "errors/transfer.md",
+      "size": 23229,
+      "sha256": "4f6440d50e600105187e0543a6b74e3f623f96821ea4257559e7b073a62fa205"
+    },
+    {
+      "path": "errors/user.md",
+      "size": 473,
+      "sha256": "92ca714395ba53ea1e7e542072fb44c0be59b9f6a422f80def131ac66c06e92b"
+    },
+    {
+      "path": "errors/virtual-account.md",
+      "size": 4588,
+      "sha256": "94f1f18ab3d309a5744b74b9721397a635bf35d0f83bb94b0e283a9a5b60d563"
+    },
+    {
+      "path": "errors.md",
+      "size": 9528,
+      "sha256": "014c1c61536824e2b6802c9783c4bb164baa17c1a376aeccb728b64b6d170bd7"
+    },
+    {
+      "path": "financial-insights.md",
+      "size": 4919,
+      "sha256": "b6810942f8d0802b00eeb636a5d483f49cbe76c52a826067df51912be0056e6b"
+    },
+    {
+      "path": "identity/add-to-app.md",
+      "size": 14841,
+      "sha256": "29571efe6532a3222bce03dfed580f222a7884437548ed0ecbdea697f4a365ef"
+    },
+    {
+      "path": "identity/identity-document-upload.md",
+      "size": 5148,
+      "sha256": "508e21afc693853f5be139a02359c9ebf49a6cdc500a914a4ad14f513b01092d"
+    },
+    {
+      "path": "identity/interpreting-identity-match.md",
+      "size": 6131,
+      "sha256": "1973faacbe4be6c2c64ef37d51936df43966d04a9127b2f94bc1c4aa3cd5d23e"
+    },
+    {
+      "path": "identity/partnerships/alloy.md",
+      "size": 10898,
+      "sha256": "93d42f5fd254790360c8ee7c36c32bcb62c67432c03cdb172471f892677ef888"
+    },
+    {
+      "path": "identity/partnerships.md",
+      "size": 827,
+      "sha256": "4f7171bfad880e75d19ba1515886a8136aa8d5f0172d89c0c043e337bca5ff27"
+    },
+    {
+      "path": "identity-verification/failed-verifications.md",
+      "size": 2889,
+      "sha256": "28f1a2457e73b6d57439917ddc8e00f6c428a30d3a20a293bb0897530ab2004c"
+    },
+    {
+      "path": "identity-verification/hybrid-input-validation.md",
+      "size": 21410,
+      "sha256": "3c67f65a4fed19b9d55d4b6f7e009732ad342101778af58917378021634e683a"
+    },
+    {
+      "path": "identity-verification/link.md",
+      "size": 3260,
+      "sha256": "be71d2275408957563cca7c5dcb5d2737af6944e1bc8addd6260de30ddfcc222"
+    },
+    {
+      "path": "identity-verification/reporting.md",
+      "size": 2991,
+      "sha256": "815d9490e1ca7a7c9c8811c9b58762dc0bae39f0a16df14d1e27152650c031da"
+    },
+    {
+      "path": "identity-verification/risk-checks.md",
+      "size": 6638,
+      "sha256": "ab346fa6ed8d0737ab6f0d7397bb538593b651d54f219f7c400572c6df6badea"
+    },
+    {
+      "path": "identity-verification/testing.md",
+      "size": 7370,
+      "sha256": "d6cdbb4939ec927747dd1d8e89efa0069b731305233aa58b5bf6b1150707757d"
+    },
+    {
+      "path": "identity-verification/webhooks.md",
+      "size": 2493,
+      "sha256": "7511c0b59f3f33f50a605fd2113ea9e6dacd6ecb51174092ab1c99ac2768b6f0"
+    },
+    {
+      "path": "identity-verification.md",
+      "size": 34766,
+      "sha256": "4ce025f35b8ce524ff462a258595e3378b2abc04edabb32839ad848f0039a0ad"
+    },
+    {
+      "path": "identity.md",
+      "size": 15743,
+      "sha256": "5578c5447632cdde846675d521714cb16497846d2364271cd65442fb9de3d015"
+    },
+    {
+      "path": "income/add-to-app.md",
+      "size": 21641,
+      "sha256": "e844ca480bafab844918817d5a4ab516d4f56e5c54ee8cb6dc42b1bd15f1e0b9"
+    },
+    {
+      "path": "income/bank-income.md",
+      "size": 9510,
+      "sha256": "35714a9cbb61406fdc4f9c29534c3a42fb8bdf4bd31dc84ae33d260c8aa9293a"
+    },
+    {
+      "path": "income/document-income.md",
+      "size": 10863,
+      "sha256": "9a58e43c7cdd9ecabb9b7c315a8a30db69d6140c4148d739339a6f6b5b4cd159"
+    },
+    {
+      "path": "income/payroll-income.md",
+      "size": 6790,
+      "sha256": "e4e4e66b74481b810c928c8b23dec298102e923213080aaea40946cb1db7a904"
+    },
+    {
+      "path": "income.md",
+      "size": 2984,
+      "sha256": "a9d6fb12b2abb54a2bca34216074f3ba9c0afa6f915e823c05a8c1f671c4e5d8"
+    },
+    {
+      "path": "institutions/europe.md",
+      "size": 1277,
+      "sha256": "6552fe1d6e2ed7b99c07bc1bc1c6ae208c8783f33eb1ef05bcce595908e34f60"
+    },
+    {
+      "path": "institutions.md",
+      "size": 958,
+      "sha256": "9acb6ec9c220641b9ca056cf5198274f94a0cebc1834be3cb87492a83dc43634"
+    },
+    {
+      "path": "investments/add-to-app.md",
+      "size": 19133,
+      "sha256": "993410e1cdf20c63093345c7d6b5f0c1f923ee5578c19988cfafd238b654e75a"
+    },
+    {
+      "path": "investments-move/add-to-app.md",
+      "size": 14615,
+      "sha256": "6aeb4acc43525544285a6680d494c60a3354e0f52a0d88c025eeacf86b6dc1df"
+    },
+    {
+      "path": "investments-move.md",
+      "size": 5805,
+      "sha256": "9e8c2f4ca73ec190f7067fe44d4d2961e34b3d829f36302cb6028de24433d97f"
+    },
+    {
+      "path": "investments.md",
+      "size": 10758,
+      "sha256": "20226d26e92a973c2dec23398e454961f426f024847663718e36d21645495696"
+    },
+    {
+      "path": "kyc-aml.md",
+      "size": 3254,
+      "sha256": "0ba8c115582245a578f4bcfa1a11fe5b97cafd709c7f5fd04663b01ba274e8c4"
+    },
+    {
+      "path": "launch-checklist.md",
+      "size": 3316,
+      "sha256": "688a9d52e3ef54b5964040a3ca667ce497f0d78b5256cd6c6a5c0270c7937f5d"
+    },
+    {
+      "path": "layer/add-to-app.md",
+      "size": 19744,
+      "sha256": "60cf5dfccaf956d743d43115f7fc35c4115447b36ae4a8491c0e58562193dc4e"
+    },
+    {
+      "path": "layer.md",
+      "size": 14007,
+      "sha256": "669f3012b9cfb5ccaf00881ba04fb4a0cbe9db7798ed5feedb463347b048b581"
+    },
+    {
+      "path": "liabilities/add-to-app.md",
+      "size": 14422,
+      "sha256": "3d25f0dfa37a860b9e9e81ed5b191e1695c9f1a09181939765dd2bf78b464ec3"
+    },
+    {
+      "path": "liabilities.md",
+      "size": 7100,
+      "sha256": "2552ef4fa45f73d53b15d441ac5daaedd5412737875f6d74663a30aabd606a8e"
+    },
+    {
+      "path": "link/android/troubleshooting.md",
+      "size": 2007,
+      "sha256": "c0aed87ce10888865d9d38f48ee6ec81cb02c40cd1b4c29826501d7a09e15681"
+    },
+    {
+      "path": "link/android.md",
+      "size": 27197,
+      "sha256": "6eab68aeacf0ba956563a592dd375e8e0bc68aa2d4f7a796247fa3d8f5cec520"
+    },
+    {
+      "path": "link/best-practices.md",
+      "size": 6880,
+      "sha256": "7af3aef80581d6db06863b3ab2e411dfcc0e8bd8b253f96d4fa78721aeca9008"
+    },
+    {
+      "path": "link/customization.md",
+      "size": 13516,
+      "sha256": "28aeba35c31342a7c96cffefc059da50005b24209c467c936015468065ec2080"
+    },
+    {
+      "path": "link/data-transparency-messaging-migration-guide.md",
+      "size": 18661,
+      "sha256": "9035ac7028e4005899d292fd6bbbdbe8fea4dfff5bb084bed5f41b9ac22c6209"
+    },
+    {
+      "path": "link/duplicate-items.md",
+      "size": 8686,
+      "sha256": "06640a8773e84d7b531102169b1a8856c6dfc49404e57d8027360e6e98450070"
+    },
+    {
+      "path": "link/embedded-institution-search.md",
+      "size": 13109,
+      "sha256": "d3de2542aa1c61a3535e2dd3480c696c086802da23a002fb583d2f834d0f8e97"
+    },
+    {
+      "path": "link/flutter.md",
+      "size": 12057,
+      "sha256": "bcfec496e6c6d8797de51c4213328fa6bbfa93cc624ec8be3454a44a301dc263"
+    },
+    {
+      "path": "link/handle-invalid-link-token.md",
+      "size": 2948,
+      "sha256": "49a842c395682bbe4d82eecd981ed7d42b0696724323cc1c5f77320c4bb3214d"
+    },
+    {
+      "path": "link/hosted-link/embedded-clients.md",
+      "size": 5541,
+      "sha256": "a21ae8cb9adb60dfdf1d15c2dd06c95760e254b1a710a77c50ccd0176ad29ffb"
+    },
+    {
+      "path": "link/hosted-link.md",
+      "size": 24888,
+      "sha256": "d147b747341faf2fef9c5b3cdbe3a963b9e1de5ad41c589313120931fdc711de"
+    },
+    {
+      "path": "link/initializing-products.md",
+      "size": 27637,
+      "sha256": "ee805577c0bccecebdb1a37261f3b6653090f84f9c6d6e5f8f2da9bccbbfb6d5"
+    },
+    {
+      "path": "link/institution-status.md",
+      "size": 1695,
+      "sha256": "00ab29603fc75e2fcaae2a23d85acf53c3794b00210097e91e1c61614995d155"
+    },
+    {
+      "path": "link/ios.md",
+      "size": 38519,
+      "sha256": "c4f8068b06a53ebaba46754fec797b0f31d07e18d2f6a33706db5abe0ee8ca04"
+    },
+    {
+      "path": "link/link-recovery.md",
+      "size": 3722,
+      "sha256": "27a8014d13b529696e0f634320c2097d0a47e18cb61e7324e5b5db61a3970c71"
+    },
+    {
+      "path": "link/link-token-migration-guide.md",
+      "size": 15541,
+      "sha256": "b3474c99c02a0ef1c2d33da13f5eccef30e96f07548e8717b171a0dabfab4917"
+    },
+    {
+      "path": "link/measuring-conversion.md",
+      "size": 10642,
+      "sha256": "b7e79ac8a76663b14564b0a5069ea1b84e5e05908317f9bf5b92a63c69d8f9bc"
+    },
+    {
+      "path": "link/messaging.md",
+      "size": 7985,
+      "sha256": "1c8a4981ebb55bccb8a7bbd2aabfab7cfb95bf43c11b3d1f0636e4b9e0eec848"
+    },
+    {
+      "path": "link/multi-item-link.md",
+      "size": 8467,
+      "sha256": "305f2c4184432cec7be09df1a5bc89856338f9c05a4ce3ff805ce2d08d5295a3"
+    },
+    {
+      "path": "link/oauth.md",
+      "size": 57919,
+      "sha256": "817279e251e9906d76806b299dc99474afcc20df973425635f6d92f8ac4e0c12"
+    },
+    {
+      "path": "link/react-native.md",
+      "size": 28695,
+      "sha256": "7d61f80d59f886ffd15b890998b886b003baf573b8d126081fe13ae894eb672f"
+    },
+    {
+      "path": "link/returning-user.md",
+      "size": 12930,
+      "sha256": "0ec1f2d7f9fff7655182c77bd0525a19ef8dd0ebcc00fb5fc37657ea2f929bd4"
+    },
+    {
+      "path": "link/troubleshooting.md",
+      "size": 6825,
+      "sha256": "069e2b788412206e2e19cb07645af7113ea06133f12f80a463daf44de4e43ba0"
+    },
+    {
+      "path": "link/update-mode.md",
+      "size": 27616,
+      "sha256": "2d00d945ae00ae55f89ec5b2343c416117939df69bd5b7ccebc11a83b6935786"
+    },
+    {
+      "path": "link/web.md",
+      "size": 29737,
+      "sha256": "51324c066df1e62af35ab473416d1ec5760834490444613bee8be08477d191ae"
+    },
+    {
+      "path": "link/webview.md",
+      "size": 19999,
+      "sha256": "148d7ab6540807c86b39a0338b2feea9b127ac2f59143ae3caeb27fc5699192e"
+    },
+    {
+      "path": "link.md",
+      "size": 7728,
+      "sha256": "d2b34b6e58cdfd6e0dff1d90dd3289cd6a82cc8f7e66d8d6a30337039af8f7df"
+    },
+    {
+      "path": "monitor/algorithms-and-lists.md",
+      "size": 4436,
+      "sha256": "8223b99eec5fdd763cd889c3ff775c8e3be50456f33714267b66a08db8e07979"
+    },
+    {
+      "path": "monitor.md",
+      "size": 16355,
+      "sha256": "4dd59aee7feb2e30f650c7a2e0259b01c95dfda52a43a1adb47aaac946cb30a0"
+    },
+    {
+      "path": "payment-initiation/payment-initiation-one-time/add-to-app.md",
+      "size": 12843,
+      "sha256": "da11d1d35a62bcab4e9613538e04367dbf50e0cc31e2da9da984123cc27cd0c6"
+    },
+    {
+      "path": "payment-initiation/payment-initiation-one-time/handling-failed-payments.md",
+      "size": 1878,
+      "sha256": "17cd7e3a009337eed493d0a6ac4f0fa893ec0e7fb8b41161fb4fe8727a7ad5c8"
+    },
+    {
+      "path": "payment-initiation/payment-initiation-one-time/refunds.md",
+      "size": 1164,
+      "sha256": "f7486e808ea708cb109851cebf5b147f0f2129cc2a05367291f57b2220ad6363"
+    },
+    {
+      "path": "payment-initiation/payment-initiation-one-time/user-onboarding-and-account-funding.md",
+      "size": 10940,
+      "sha256": "5d39c31b65409292de646178fba8044db4de585407db9582a79653efe3ab1a4d"
+    },
+    {
+      "path": "payment-initiation/payment-initiation-one-time.md",
+      "size": 3219,
+      "sha256": "ef770dd10a7a39b8bdd72c2f7d00255b020a4f33dd495a00203ffc59fc2a2ebe"
+    },
+    {
+      "path": "payment-initiation/payment-status.md",
+      "size": 6537,
+      "sha256": "05c2cd2dbf6242dec05d429c3f72f464182b514a5a658a34e712770b27de4cd8"
+    },
+    {
+      "path": "payment-initiation/payments-dashboard.md",
+      "size": 4018,
+      "sha256": "c97674623db25c4fb12cedc8574e363c09b18412a1fa0d5705b59594ec5871b1"
+    },
+    {
+      "path": "payment-initiation/variable-recurring-payments/add-to-app.md",
+      "size": 14628,
+      "sha256": "2ab7d411d9731df404d1273c9144dc1660093116026e69c0a891dd49b828a6b6"
+    },
+    {
+      "path": "payment-initiation/variable-recurring-payments/handling-failed-payments.md",
+      "size": 1791,
+      "sha256": "df7a6b08f41b7b48e887f809b0296b464bb0da80a3a37c525bacf9edcee72d4d"
+    },
+    {
+      "path": "payment-initiation/variable-recurring-payments/managing-consent.md",
+      "size": 2699,
+      "sha256": "96d3b754f7205ad8a1cfc756e424ae7bc8b0816f3b40c795c9e02dfdd582efb9"
+    },
+    {
+      "path": "payment-initiation/variable-recurring-payments/refunds.md",
+      "size": 699,
+      "sha256": "33ebf5b24e6fd5c3a272e21408ac0e470bfe1ecb69c5a00f7b881ca271e92422"
+    },
+    {
+      "path": "payment-initiation/variable-recurring-payments.md",
+      "size": 2104,
+      "sha256": "ded5993a87e47e8f7766a02114375da01094047c5648f8adb8b4abf44357ab40"
+    },
+    {
+      "path": "payment-initiation/virtual-accounts/account-sweeping.md",
+      "size": 2733,
+      "sha256": "91efab6269eaacc2e660d12c57a52c2494572221cb2f7dd01dac24193ee3f6ca"
+    },
+    {
+      "path": "payment-initiation/virtual-accounts/add-to-app.md",
+      "size": 7343,
+      "sha256": "9d0aa5076995ebda5ec9fa71794d9dc4324b6e921d22632c0970e3350655aeb9"
+    },
+    {
+      "path": "payment-initiation/virtual-accounts/handling-unexpected-payments.md",
+      "size": 5123,
+      "sha256": "edfbdd7f4f5e5a58d61a7ad5e16e46e81f565dc72ed79532de25487221539d9a"
+    },
+    {
+      "path": "payment-initiation/virtual-accounts/managing-virtual-accounts.md",
+      "size": 6040,
+      "sha256": "008fea52dff2a993aa54eefebe52945feedc40edf044abccec17d506f161962d"
+    },
+    {
+      "path": "payment-initiation/virtual-accounts/payment-confirmation.md",
+      "size": 3668,
+      "sha256": "5553ebabb632266ae13b5f96d15fb14d9e04a0e23a321756564a1ab7ef17a1ce"
+    },
+    {
+      "path": "payment-initiation/virtual-accounts/payouts.md",
+      "size": 4241,
+      "sha256": "042c6ffb008fbd778ff2d6fafbcc02e76c109d2abee393e0bdec029a748f46d6"
+    },
+    {
+      "path": "payment-initiation/virtual-accounts/refunds.md",
+      "size": 3896,
+      "sha256": "598792a064beaeb00801a7d26527bc09dd425750a5a8f7cb3925167c7f04eb36"
+    },
+    {
+      "path": "payment-initiation/virtual-accounts.md",
+      "size": 1691,
+      "sha256": "8e819c250c025a8e8da13d827c6764095d4e8cd1b0e0cc3153d019f8fc2b6aae"
+    },
+    {
+      "path": "payment-initiation.md",
+      "size": 4166,
+      "sha256": "773d8991d1cd574bdbf081a26c5797eddb5d088b621b909333e58172b11e4749"
+    },
+    {
+      "path": "payments.md",
+      "size": 10098,
+      "sha256": "f871bc51864eb03129fbb412db982b8e146242ab29d41be264db2f83887ef2cf"
+    },
+    {
+      "path": "quickstart/glossary.md",
+      "size": 16023,
+      "sha256": "b29e31ddc001a1538d19bec677b01dabe017fc49eb0f74e9972ebdf96a6d967e"
+    },
+    {
+      "path": "quickstart.md",
+      "size": 12787,
+      "sha256": "0cf28ebb6dce0b3a92487d7179ee2c5727fc9e49e0343c65dd249754f66c99e3"
+    },
+    {
+      "path": "resources/cli.md",
+      "size": 9996,
+      "sha256": "fe8c7c7392d9575624ee6f4b365a785449f785b1631bd5c30b80d377fba6b472"
+    },
+    {
+      "path": "resources/mcp.md",
+      "size": 9033,
+      "sha256": "3caab7f081a18829c8a06eaa4fe4bf7158aa80e7e0f4a37514aaae4c5cfecf9d"
+    },
+    {
+      "path": "resources/vibe-coding.md",
+      "size": 4068,
+      "sha256": "960ef703d0060977fdd6425492a15ca4b06e17aa8f9d93db0e84cb0686c478c7"
+    },
+    {
+      "path": "resources.md",
+      "size": 11535,
+      "sha256": "2ce2827042c67192b7bac6fd3c10155a3c3038e54260ba85a36b0470ca080b71"
+    },
+    {
+      "path": "sandbox/institutions.md",
+      "size": 3642,
+      "sha256": "27eebdab197f0b8c390ba68b2d1e9812620d0a687bb3b1c1f759514cdbd48e96"
+    },
+    {
+      "path": "sandbox/profiles.md",
+      "size": 4234,
+      "sha256": "8bc86c9fad5b87c753b8688b02138ef64d62ae7e5cd1717dd7c0098533d675f1"
+    },
+    {
+      "path": "sandbox/studio.md",
+      "size": 4145,
+      "sha256": "51f2ad946159d7831650623ab356640792201c782243157372f6546318c3c8fc"
+    },
+    {
+      "path": "sandbox/test-credentials.md",
+      "size": 7927,
+      "sha256": "1212b8250f6109a5772a5ab150487f2e0a7f21218f9140c02d5ae070a7fb5ceb"
+    },
+    {
+      "path": "sandbox/user-custom.md",
+      "size": 31790,
+      "sha256": "26c8e6fe5511f44f6abc717d2bc93e0d6b4c66ee8c434cbf4cb009fe57e80c91"
+    },
+    {
+      "path": "sandbox.md",
+      "size": 14440,
+      "sha256": "22f7c49996d10c1b66f3522f89843dee7fa2b0887104da28d028e10e3a6ca0b5"
+    },
+    {
+      "path": "settings.md",
+      "size": 595,
+      "sha256": "56101efa850ccdd434c23e15660e139a0e94d62cc3f255b09742cdb3334ddf4b"
+    },
+    {
+      "path": "signal/add-to-app.md",
+      "size": 11701,
+      "sha256": "868b199f37f30536aef803073901a701564c746b839f944a3347c85646bde951"
+    },
+    {
+      "path": "signal/creating-signal-items.md",
+      "size": 4034,
+      "sha256": "57b004c16bff47e32709516688b074b2f9f80be04dd8e45a16d426bbb83a453c"
+    },
+    {
+      "path": "signal/reporting-returns.md",
+      "size": 3852,
+      "sha256": "923fb2c94612d8e6161047109a4854b20e07a47a0da57c6f922479e17f3f393d"
+    },
+    {
+      "path": "signal/signal-rules.md",
+      "size": 14672,
+      "sha256": "3e8e9ba812a90eee3bc77b248951ec6d3c1ec454104c403d9e9c134f1699f974"
+    },
+    {
+      "path": "signal/tuning-rules.md",
+      "size": 6068,
+      "sha256": "ada61f8c0b79fa1e9e639c2cc062f81c389e6c5850f1b51ca2cba2a50e992a0e"
+    },
+    {
+      "path": "signal.md",
+      "size": 5192,
+      "sha256": "bca0f933bde0b0cacad80a0eaaf7346c9fb8c2b63390c40b0797817d68f837bc"
+    },
+    {
+      "path": "statements.md",
+      "size": 7273,
+      "sha256": "8b4be9aee33e9dd005aa3ac23f4f9b7abb650ea13cee01fff158f33db4e5c112"
+    },
+    {
+      "path": "support.md",
+      "size": 4339,
+      "sha256": "5895aea75a806024c6071cbb9328afc31cc09d6ae3c92c7e5d6584ad9844c889"
+    },
+    {
+      "path": "transactions/add-to-app.md",
+      "size": 11656,
+      "sha256": "662050c2af59a6df4fbf835e3dc5d4fc0ac30f7fb72d87311fd4b9cc707fee20"
+    },
+    {
+      "path": "transactions/partnerships/atomic-financial.md",
+      "size": 11369,
+      "sha256": "ea4f0107b58a5268b8854e57c62a218abe7c242ea525b2e2b2ac6f7e788e337f"
+    },
+    {
+      "path": "transactions/partnerships/boom.md",
+      "size": 10803,
+      "sha256": "98f778d7472a731e88c0d2ced03fa8c14048ce193177da1ba760ac9fb0b96122"
+    },
+    {
+      "path": "transactions/partnerships/cardlytics.md",
+      "size": 10731,
+      "sha256": "c657d0706fb2fd92ee9592ae7c1d11a21d17e3f72794ddca46733b7f338a5517"
+    },
+    {
+      "path": "transactions/partnerships/esusu.md",
+      "size": 11204,
+      "sha256": "05e53544b34a8aedc6c910ec37130392af5f60f5262ffb0aa7b9bcd4ee9d1da6"
+    },
+    {
+      "path": "transactions/partnerships/knot.md",
+      "size": 10900,
+      "sha256": "6014a4b5118d2c26439fd14d6aa92962610c7ef3622049962ab0b1a06235eafd"
+    },
+    {
+      "path": "transactions/partnerships/layer.md",
+      "size": 10694,
+      "sha256": "7becbd6b1fd7b177e233786c93a265fa2230acdd7c8695066b610c2f338bf620"
+    },
+    {
+      "path": "transactions/partnerships/pinwheel.md",
+      "size": 11010,
+      "sha256": "bc88a2d43822538c963fbe9e9f8b9c7e9b1072a626fc21b52d31fe8a3e580434"
+    },
+    {
+      "path": "transactions/partnerships/teal.md",
+      "size": 10261,
+      "sha256": "1bb6bd63c8ce3fd5967c96edd7d40d3c99e4a0214c1a72867c9c0f5d66528edf"
+    },
+    {
+      "path": "transactions/partnerships.md",
+      "size": 1930,
+      "sha256": "5ff16c572577c754c8afd49ec08e783b5d37ffb4e8606b788684ed8acf71eb92"
+    },
+    {
+      "path": "transactions/pfc-migration.md",
+      "size": 6786,
+      "sha256": "a1aea56881342d4649e66ee4ac318bb62cf18ba87d24e167254c627ded91f227"
+    },
+    {
+      "path": "transactions/sync-migration.md",
+      "size": 9942,
+      "sha256": "eee0f47412e10089e90587e46c30e9ec2301323698ec5d433b6b64fec774fc3b"
+    },
+    {
+      "path": "transactions/transactions-data.md",
+      "size": 7387,
+      "sha256": "747b3dab4bd1484c18f4def5a789a40f13080bc0e82b2f56a89b3dd2c68fb895"
+    },
+    {
+      "path": "transactions/troubleshooting.md",
+      "size": 4488,
+      "sha256": "4c6110c75da13241b9f25fa8989815ef6595b1baf055ebfa0db8165b87e6b4ee"
+    },
+    {
+      "path": "transactions/webhooks.md",
+      "size": 9139,
+      "sha256": "9682e67bd00801b6ed0b02c57be842ab1d338108b5fa513ea6afb1ca38bff321"
+    },
+    {
+      "path": "transactions.md",
+      "size": 13886,
+      "sha256": "4e530ff922fa548e8535d636605725a795ed54ce7953a276af392156bf1561b1"
+    },
+    {
+      "path": "transfer/application.md",
+      "size": 6459,
+      "sha256": "95498d8d2114ccf9aa4d968e3007518546235d3a9198b2beb3a4386b67c1b221"
+    },
+    {
+      "path": "transfer/creating-transfers.md",
+      "size": 33587,
+      "sha256": "3e72b980fcc5d58d7d646c8b96ead55c1dc24d06182c6c2aae6d6c4755be22e5"
+    },
+    {
+      "path": "transfer/dashboard.md",
+      "size": 13318,
+      "sha256": "3d0b3cb5ce37c8cb8a0f016d4a11221a7b153f140820dcf894bddda8cb00b474"
+    },
+    {
+      "path": "transfer/flow-of-funds.md",
+      "size": 15909,
+      "sha256": "9132dea441189392531a810ce619799b3ad887f8a85d7013206568bab9c2116a"
+    },
+    {
+      "path": "transfer/glossary.md",
+      "size": 12809,
+      "sha256": "8fb4031003dcf1e7da54d328e1ef647db0cf1954174994b65ffbf2ea6d52f083"
+    },
+    {
+      "path": "transfer/platform-payments.md",
+      "size": 20499,
+      "sha256": "8ac587436b90a9fb12c5ff02992656335975281b173b98916b0f1746087f9086"
+    },
+    {
+      "path": "transfer/reconciling-transfers.md",
+      "size": 9755,
+      "sha256": "dd0826d64ca8a1c8845488d09ae0b1e2bbe071c487707765c0f75c049602000a"
+    },
+    {
+      "path": "transfer/recurring-transfers.md",
+      "size": 7110,
+      "sha256": "a5daaf660674dc7d992f92fbbea6912547240066e7eef349f33bbd6e563c80d1"
+    },
+    {
+      "path": "transfer/refunds.md",
+      "size": 3040,
+      "sha256": "e73a01464bc3b9c835c3c9c740ee107fd3f2fd16077321cb634399dff31b9c59"
+    },
+    {
+      "path": "transfer/reserves.md",
+      "size": 3153,
+      "sha256": "05694d5551ceaf785de56bd8d8412316607b1be58954b4068b46f9b0fdcac3b0"
+    },
+    {
+      "path": "transfer/sandbox.md",
+      "size": 16939,
+      "sha256": "d223c4150ee3f16ca92a630809db71b6aed9d7ae9cb798892a987302bae5f517"
+    },
+    {
+      "path": "transfer/signal-rules.md",
+      "size": 14940,
+      "sha256": "d47b53fda724f78d2f832390d3ce0167e0f48b9ece1ff1107232e95b7e87daec"
+    },
+    {
+      "path": "transfer/troubleshooting.md",
+      "size": 11463,
+      "sha256": "59796be8390310770a68b0347872f59f887fded1adc4281ec12f9389d759d7bb"
+    },
+    {
+      "path": "transfer/using-transfer-ui.md",
+      "size": 10920,
+      "sha256": "3f79e83ce21fa71429ca1026cc88ed742612326285afe20070bd60c0f23c8be0"
+    },
+    {
+      "path": "transfer.md",
+      "size": 2898,
+      "sha256": "d0ef7eedcbed094b9eef88b298db574626f3ee3d33e4383c2c8d7cf253a8857f"
+    },
+    {
+      "path": "underwriting.md",
+      "size": 6861,
+      "sha256": "27ea08af595899f54a01d7fd4ff3ef1d0c5f7c3f6d948f508fe9fc57795c5c44"
+    }
+  ],
+  "pipeline": [
+    "CollectorTask",
+    "ReaderTask",
+    "TokenizerTask (Markdown)",
+    "MaxOccurrenceMatcherTask",
+    "SpellCheckerTask",
+    "JsonlFormatterTask"
+  ],
+  "command": "PYTHONPATH=/private/tmp/alas-installed-deps /Users/ccho/.pyenv/versions/3.12.7/bin/python3 alas-but-one/tests/data/plaid/scan.py",
+  "execution_note": "The initial serial scan was stopped after over 20 minutes. This completed scan uses eight processes calling unchanged SpellCheckerTask on disjoint candidate partitions; all production stages and settings are unchanged.",
+  "result": {
+    "documents": 288,
+    "candidates": 2141,
+    "dictionary_unknown_review_candidates": 857,
+    "parallel_scan_seconds": 310.7,
+    "manually_confirmed_typos": 1,
+    "source_hashes_unchanged": true,
+    "all_candidate_locations_verified": true,
+    "review_scope": "One confirmed typo, partial vocabulary review. Full queue precision is unmeasured."
+  },
+  "artifacts": {
+    "candidates.jsonl": "142ca7ae16dbb71d8cbb6dafb759c6094449b5149d81d5dcb6f8d6556432f8a9",
+    "review.jsonl": "d57482e98e3a66e32cdf6aea9aff812e0b9d137db5e19cb750d48c999df1705d",
+    "typos.json": "af4767fcd9a09cea9130f270372e16cf9a6271f9657d5c9179b71d3de8270751",
+    "scan.py": "a5176c38371d399858498fb6863b1a92a68748a96365a5cfb35ca00b4bec7e59"
+  }
+}

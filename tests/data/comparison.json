@@ -1,0 +1,36 @@
+{
+  "baseline": {
+    "actionable_candidates": 38,
+    "true_positives": 7,
+    "false_positives": 31,
+    "precision": 0.18421052631578946,
+    "top_10": {
+      "candidates": 10,
+      "true_positives": 6,
+      "precision": 0.6
+    },
+    "seeded_typos": {
+      "retained": 7,
+      "total": 7,
+      "retention": 1.0
+    }
+  },
+  "after": {
+    "actionable_candidates": 20,
+    "true_positives": 7,
+    "false_positives": 13,
+    "precision": 0.35,
+    "top_10": {
+      "candidates": 10,
+      "true_positives": 7,
+      "precision": 0.7
+    },
+    "seeded_typos": {
+      "retained": 7,
+      "total": 7,
+      "retention": 1.0
+    }
+  },
+  "acceptance_passed": true,
+  "scope": "synthetic regression sample; see separate Railway real-corpus evaluation"
+}

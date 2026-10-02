@@ -45,6 +45,10 @@ def load_labeled_jsonl(path: str) -> Tuple[List[List[float]], List[int]]:
                 locations=locations,
                 misspelled=record.get('misspelled', False),
                 confidence=float(record.get('confidence', 0.0)),
+                uppercase_occurrences=record.get(
+                    'uppercase_occurrences',
+                    len(locations) if record['word'].isupper() and len(record['word']) > 1 else 0,
+                ),
             )
             X.append(extract(token))
             y.append(1 if label == 'true_positive' else 0)
