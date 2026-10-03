@@ -861,6 +861,32 @@ class LogFileTests(unittest.TestCase):
             self.assertIn('RAW-NOT-JSON-123', text)
             self.assertIn('AI batch 1 failed', text)
 
+    def test_ai_raw_response_line_carries_batch_index(self):
+        import alas
+        with tempfile.TemporaryDirectory() as directory:
+            log = os.path.join(directory, 'ai.log')
+            handler = alas.setup_logging(log)
+            try:
+                tokens = {w: Token(w, 'test', [TokenLocation('a.md', 1)], confidence=0.5) for w in ('teh', 'wrld')}
+                reviewer = AIReviewer({'ai': {'enabled': True, 'batch_size': 1}})
+                client = Mock()
+                client.messages.create.return_value.content = [Mock(type='text', text='RAW-NOT-JSON')]
+                with patch.object(reviewer, '_get_client', return_value=client), redirect_stdout(io.StringIO()):
+                    reviewer.run(tokens, {'a.md': 'teh wrld'})
+            finally:
+                alas.teardown_logging(handler)
+            text = Path(log).read_text()
+            for n in (1, 2):
+                self.assertRegex(text, rf'AI batch {n} \(1 words\) raw response: RAW-NOT-JSON')
+                self.assertIn(f'AI batch {n} failed', text)
+
+    def test_log_lines_carry_thread_name_and_repo_start(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'sample.txt').write_text('retreive')
+            log = os.path.join(directory, 'run.log')
+            self._main(directory, '--log', log)
+            self.assertRegex(Path(log).read_text(), r'DEBUG \[MainThread\] alas: test : start')
+
 
 class AISendContextTests(unittest.TestCase):
     def _run(self, send_context=None):

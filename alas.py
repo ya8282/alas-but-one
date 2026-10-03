@@ -36,7 +36,7 @@ def setup_logging(path: str) -> logging.Handler:
     """Sends DEBUG logs to `path`; caller removes the returned handler."""
     handler = logging.FileHandler(path, encoding='utf-8')
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s'))
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s [%(threadName)s] %(name)s: %(message)s'))
     root = logging.getLogger()
     root.addHandler(handler)
     handler._prev_level = root.level
@@ -179,6 +179,7 @@ def _scan(args, config: Dict):
 
     def process(repo_name, repo_config):
         name = repo_config['name']
+        logging.getLogger(__name__).debug("%s : start", name)
         print(f"Processing: {name}")
         try:
             output = run_repo(
@@ -206,7 +207,7 @@ def _scan(args, config: Dict):
         for repo_name, repo_config in repos.items():
             process(repo_name, repo_config)
     else:
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(thread_name_prefix='repo') as executor:
             for future in [executor.submit(process, k, v) for k, v in repos.items()]:
                 future.result()
 
