@@ -78,17 +78,30 @@ def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
         ) from None
     config['config_path'] = os.path.abspath(path)
     config['config_dir'] = os.path.dirname(os.path.abspath(path))
-    ignore_list = config.get('settings', {}).get('ignore_list')
-    if isinstance(ignore_list, dict) and isinstance(ignore_list.get('file'), str):
-        file = os.path.expanduser(ignore_list['file'])
-        ignore_list['file'] = os.path.join(config['config_dir'], file)  # absolute file wins in join
-    log_file = config.get('settings', {}).get('log_file')
-    if isinstance(log_file, str):
-        config['settings']['log_file'] = config_relative(log_file, config['config_dir'])
+    cfg_path = config['config_path']
+
+    def require(container: Dict[str, Any], key: str, label: str, default: Any = None) -> Any:
+        value = container.get(key, default)
+        if value is not None and not isinstance(value, str):
+            raise ConfigError(f"{label} in {cfg_path} must be a string path. Edit that key in the config file.")
+        return value
+
+    config_dir = config['config_dir']
     settings = config.setdefault('settings', {})
+    ignore_list = settings.get('ignore_list')
+    if isinstance(ignore_list, dict):
+        file = require(ignore_list, 'file', 'settings.ignore_list.file')
+        if file is not None:
+            ignore_list['file'] = config_relative(file, config_dir)
+    log_file = settings.get('log_file')
+    if isinstance(log_file, str):
+        settings['log_file'] = config_relative(log_file, config_dir)
     training = settings.setdefault('training', {})
-    training['model_path'] = config_relative(training.get('model_path', DEFAULT_MODEL_PATH), config['config_dir'])
-    settings['output_dir'] = config_relative(settings.get('output_dir', '.'), config['config_dir'])
+    if not isinstance(training, dict):
+        raise ConfigError(f"settings.training in {cfg_path} must be an object. Edit that key in the config file.")
+    training['model_path'] = config_relative(
+        require(training, 'model_path', 'settings.training.model_path', DEFAULT_MODEL_PATH) or DEFAULT_MODEL_PATH, config_dir)
+    settings['output_dir'] = config_relative(require(settings, 'output_dir', 'settings.output_dir', '.') or '.', config_dir)
     return config
 
 
