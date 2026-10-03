@@ -44,11 +44,14 @@ def _load_jsonl(path: str) -> dict:
     """Returns {repo_name: {word: ignore_bool}}"""
     update_dict = collections.defaultdict(dict)
     with open(path) as f:
-        for line in f:
+        for number, line in enumerate(f, 1):
             line = line.strip()
             if not line:
                 continue
-            record = json.loads(line)
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                raise ValueError(f"Input file {os.path.abspath(path)} line {number} is not valid JSON.") from None
             word = record.get('word', '').lower()
             repo = record.get('repo', '')
             ignore = record.get('ignore')
@@ -82,6 +85,10 @@ def main():
             sys.exit("Input file must be .jsonl or .csv")
     except FileNotFoundError:
         sys.exit(f"Input file {os.path.abspath(input_file)} not found.")
+    except OSError as error:
+        sys.exit(f"Input file {os.path.abspath(input_file)} cannot be read: {error.strerror}.")
+    except ValueError as error:  # bad JSONL line
+        sys.exit(str(error))
 
     try:
         settings = load_config(default_config_path())['settings']
