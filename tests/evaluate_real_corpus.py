@@ -46,6 +46,19 @@ def evaluate_review(before, after, labels, limit=40):
     }
 
 
+def build_comparison(manifest):
+    """Build the comparison from the captured artifacts; needs no external corpus."""
+    before, after = read_jsonl(DATA / 'baseline.jsonl'), read_jsonl(DATA / 'after.jsonl')
+    labels = {r['word']: r for r in read_jsonl(DATA / 'labels.jsonl')}
+    metrics = evaluate_review(before, after, labels)
+    metrics['corpus']['documents'] = len(manifest['files'])
+    metrics['review_sample']['labeled_words'] = len(labels)
+    if metrics['review_sample']['after']['false_positives'] >= metrics['review_sample']['baseline']['false_positives']:
+        raise ValueError('Labeled false positives did not decrease')
+    metrics['acceptance_passed'] = True
+    return metrics
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--corpus', help='Corpus root; defaults to the recorded local path.')
@@ -66,7 +79,6 @@ def main():
         if hashlib.sha256((DATA / filename).read_bytes()).hexdigest() != manifest[filename + '_sha256']:
             raise ValueError(f'Captured artifact changed: {filename}')
     before, after = read_jsonl(DATA / 'baseline.jsonl'), read_jsonl(DATA / 'after.jsonl')
-    labels = {r['word']: r for r in read_jsonl(DATA / 'labels.jsonl')}
     word_regex = re.compile(r"\b(?![_\-0-9])[A-Za-z0-9']+\b")
     for records, offset in [(before, 1), (after, 0)]:
         for record in records:
@@ -75,12 +87,7 @@ def main():
                 source_lines = content[location['file']]
                 if not 1 <= line <= len(source_lines) or record['word'] not in word_regex.findall(source_lines[line - 1].lower()):
                     raise ValueError(f'Invalid source location for {record["word"]}')
-    metrics = evaluate_review(before, after, labels)
-    metrics['corpus']['documents'] = len(content)
-    metrics['review_sample']['labeled_words'] = len(labels)
-    if metrics['review_sample']['after']['false_positives'] >= metrics['review_sample']['baseline']['false_positives']:
-        raise ValueError('Labeled false positives did not decrease')
-    metrics['acceptance_passed'] = True
+    metrics = build_comparison(manifest)
     Path(args.output).write_text(json.dumps(metrics, indent=2) + '\n')
     print(json.dumps(metrics, indent=2))
 
