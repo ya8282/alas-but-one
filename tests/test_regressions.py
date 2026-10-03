@@ -89,7 +89,7 @@ class RegressionTests(unittest.TestCase):
         from alas_but_one.matchers.spell_checker import SpellCheckerTask
         checker = Mock()
         checker.unknown.return_value = {'http', 'i'}
-        checker.correction.side_effect = lambda word: None
+        checker.candidates.return_value = None
         contents = {'first.txt': 'HTTP http HTTP', 'second.txt': 'Http I'}
         results = []
         for content in [contents, dict(reversed(list(contents.items())))]:
@@ -139,7 +139,7 @@ class RegressionTests(unittest.TestCase):
     def test_acronym_score_interpolates_and_standalone_casing_survives(self):
         from alas_but_one.matchers.confidence_scorer import compute_confidence
         checker = Mock()
-        checker.correction.return_value = None
+        checker.candidates.return_value = None
         for ratio, expected in [(0, 0.4), (0.5, 0.3), (1, 0.2)]:
             self.assertEqual(compute_confidence('http', True, checker, uppercase_ratio=ratio)[0], expected)
         self.assertEqual(compute_confidence('HTTP', True, checker)[0], 0.2)
@@ -181,7 +181,7 @@ class RegressionTests(unittest.TestCase):
                                ('API', False, .1, 'false_positive'), ('kubectl', True, .3, 'false_positive')] * 3
         ]
         checker = Mock()
-        checker.correction.return_value = None
+        checker.candidates.return_value = None
         with tempfile.TemporaryDirectory() as directory, patch('alas_but_one.training.features._get_checker', return_value=checker):
             labels = Path(directory) / 'l.jsonl'
             labels.write_text('\n'.join(json.dumps(r) for r in rows))
@@ -291,7 +291,7 @@ class RegressionTests(unittest.TestCase):
         tokens = TokenizerTask({}, {'name': 'test'}).run({'sample.txt': 'HTTP http HTTP'})
         tokens['http'].label = 'false_positive'
         checker = Mock()
-        checker.correction.return_value = None
+        checker.candidates.return_value = None
         with tempfile.TemporaryDirectory() as directory, chdir(directory), patch('alas_but_one.training.features._get_checker', return_value=checker):
             path = JsonlFormatterTask({}, {'name': 'test'}).run(tokens)
             record = json.loads(Path(path).read_text())
@@ -1358,6 +1358,19 @@ class MongoCredentialLeakTests(unittest.TestCase):
         self.assertIn('replica.example.net', text)
         self.assertIsNone(caught.exception.__cause__)
         self.assertTrue(caught.exception.__suppress_context__)
+
+
+class SuggestionDeterminismTests(unittest.TestCase):
+    def test_tied_suggestion_is_stable_across_hash_seeds(self):
+        import subprocess
+        code = ('from spellchecker import SpellChecker; '
+                'from alas_but_one.matchers.confidence_scorer import compute_confidence; '
+                "print(compute_confidence('etfs', True, SpellChecker())[1])")
+        src = str(Path(__file__).resolve().parents[1] / 'src')
+        out = {subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, check=True,
+                              env={**os.environ, 'PYTHONHASHSEED': str(seed), 'PYTHONPATH': src}).stdout
+               for seed in range(5)}
+        self.assertEqual(out, {'effs\n'})
 
 
 if __name__ == '__main__':

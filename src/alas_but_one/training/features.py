@@ -1,6 +1,7 @@
 from typing import List
 from alas_but_one.models.token import Token
 from spellchecker import SpellChecker
+from alas_but_one.matchers.confidence_scorer import _correction
 
 _checker = None
 
@@ -47,7 +48,7 @@ def extract(token: Token) -> List[float]:
 
     edit_dist = 0.0
     if token.misspelled:
-        correction = checker.correction(word)
+        correction = _correction(word, checker)
         if correction and correction != word:
             edit_dist = float(_edit_distance(word, correction))
 

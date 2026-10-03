@@ -23,11 +23,19 @@ def _edit_distance(s1: str, s2: str) -> int:
 MAX_EDIT2_LENGTH = 20
 
 
+def _best(candidates, word: str, checker: SpellChecker) -> Optional[str]:
+    """Most frequent candidate; ties go to the alphabetically first (set order varies with PYTHONHASHSEED)."""
+    if not candidates:
+        return None
+    plain = checker._remove_diacritics(word)
+    same = [c for c in candidates if checker._remove_diacritics(c) == plain]
+    return min(same or candidates, key=lambda w: (-checker[w], w))
+
+
 def _correction(word: str, checker: SpellChecker) -> Optional[str]:
     if len(word) <= MAX_EDIT2_LENGTH:
-        return checker.correction(word)
-    candidates = checker.known(checker.edit_distance_1(word))
-    return max(candidates, key=checker.__getitem__) if candidates else None
+        return _best(checker.candidates(word), word, checker)
+    return _best(checker.known(checker.edit_distance_1(word)), word, checker)
 
 
 def compute_confidence(
