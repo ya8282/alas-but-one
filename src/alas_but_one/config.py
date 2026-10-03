@@ -5,6 +5,7 @@ from importlib import resources
 from typing import Any, Dict, Optional
 
 DEFAULT_CONFIG = 'config.json'
+DEFAULT_MODEL_PATH = 'models/classifier.json'
 
 
 class ConfigError(Exception):
@@ -53,6 +54,11 @@ def init_config(path: str) -> str:
     return target
 
 
+def config_relative(value: str, config_dir: str) -> str:
+    """~-expands `value`; a relative result is joined onto the config file's directory."""
+    return os.path.normpath(os.path.join(config_dir, os.path.expanduser(value)))  # absolute value wins in join
+
+
 def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
     """Loads JSON config and records its directory so relative repo paths resolve against it."""
     try:
@@ -78,7 +84,11 @@ def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
         ignore_list['file'] = os.path.join(config['config_dir'], file)  # absolute file wins in join
     log_file = config.get('settings', {}).get('log_file')
     if isinstance(log_file, str):
-        config['settings']['log_file'] = os.path.join(config['config_dir'], os.path.expanduser(log_file))
+        config['settings']['log_file'] = config_relative(log_file, config['config_dir'])
+    settings = config.setdefault('settings', {})
+    training = settings.setdefault('training', {})
+    training['model_path'] = config_relative(training.get('model_path', DEFAULT_MODEL_PATH), config['config_dir'])
+    settings['output_dir'] = config_relative(settings.get('output_dir', '.'), config['config_dir'])
     return config
 
 
@@ -92,9 +102,7 @@ def resolve_repo_dir(repo_config: Dict[str, Any], settings: Dict[str, Any], conf
     """
     source_dir = repo_config.get('source_dir', '')
     if 'path' in repo_config:
-        base = os.path.expanduser(repo_config['path'])
-        if not os.path.isabs(base):
-            base = os.path.join(config_dir, base)
+        base = config_relative(repo_config['path'], config_dir)
     elif 'repo_base_full_path' in settings and 'relative_path' in repo_config:
         base = os.path.join(settings['repo_base_full_path'], repo_config['relative_path'])
     else:

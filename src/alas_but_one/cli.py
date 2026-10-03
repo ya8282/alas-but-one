@@ -11,6 +11,7 @@ Usage:
   alas --fail-above 0.8 --quiet      # ...and print only those: repo<TAB>word<TAB>confidence<TAB>file:line
   alas --verbose                     # per-stage token counts
   alas --log run.log                 # debug log: stage timings, raw AI responses
+  alas --output-dir out             # write outputs to ./out instead of settings.output_dir
   alas --train labels.jsonl          # train classifier from labeled JSONL
   alas --config ~/abo.json           # config elsewhere (or set ABO_CONFIG)
   alas --init                        # write an example config.json here and exit
@@ -96,6 +97,7 @@ def run_repo(
         ai_cfg['enabled'] = True
         effective_settings = {**settings_config, 'ai': ai_cfg}
 
+    repo_config = {**repo_config, 'key': repo_name}  # formatters name output files by key
     directory = resolve_repo_dir(repo_config, effective_settings, config_dir)
     check_repo_dir(repo_config, directory, config_path)
 
@@ -160,10 +162,15 @@ def cmd_run(args, config: Dict) -> int:
 
 def _scan(args, config: Dict):
     settings = config['settings']
+    if args.output_dir:
+        settings = {**settings, 'output_dir': os.path.abspath(args.output_dir)}  # CLI paths are cwd-relative
     modules = config.get('modules', {})
 
-    model_path = settings.get('training', {}).get('model_path', 'models/classifier.pkl')
-    predictor = MLPredictor(model_path)
+    model_path = settings.get('training', {}).get('model_path', 'models/classifier.json')
+    try:
+        predictor = MLPredictor(model_path)
+    except ValueError as e:
+        sys.exit(str(e))
     if predictor.available:
         print(f"ML model loaded from {model_path}")
 
@@ -220,9 +227,12 @@ def _scan(args, config: Dict):
 def cmd_train(args, config: Dict) -> None:
     from alas_but_one.training.trainer import train
     settings = config['settings']
-    model_path = settings.get('training', {}).get('model_path', 'models/classifier.pkl')
+    model_path = settings.get('training', {}).get('model_path', 'models/classifier.json')
     min_samples = settings.get('training', {}).get('min_training_samples', 20)
-    train(args.train, model_path, min_samples)
+    try:
+        train(args.train, model_path, min_samples)
+    except ValueError as e:
+        sys.exit(str(e))
 
 
 def _unit_float(text: str) -> float:
@@ -268,6 +278,10 @@ def main() -> None:
     parser.add_argument(
         '--format', choices=['jsonl', 'csv'], default='jsonl',
         help='Output format (default: jsonl).'
+    )
+    parser.add_argument(
+        '--output-dir', metavar='DIR',
+        help='Write output files to DIR (relative to the current directory); overrides settings.output_dir.'
     )
     parser.add_argument(
         '--ai', action='store_true',

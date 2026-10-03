@@ -4,15 +4,37 @@ Finds atomic typo candidates in documentation repositories by surfacing words th
 
 ## Installation
 
+Recommended, an isolated command-line install:
+
+```bash
+pipx install alas-but-one
+```
+
+Or install with the optional extras (add `--force` if `alas-but-one` is already installed):
+
+```bash
+pipx install 'alas-but-one[ai,ml]'
+```
+
+Or use a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install 'alas-but-one[ai,ml]'
+```
+
+To work on the code, install from a clone:
+
 ```bash
 git clone https://github.com/ccho-mongodb/alas-but-one.git
 cd alas-but-one
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[ai,ml]'
+pip install -e '.[ai,ml]'
 ```
 
-The install provides the `alas` and `alas-save-ignore` commands. The `ai` extra (`anthropic`) is only needed for `--ai` and the `ml` extra (`scikit-learn`, `numpy`) for `--train`. The core requirements are `pyspellchecker` and `pymongo`. Use a clean virtual environment: the unrelated package named `spellchecker` conflicts with `pyspellchecker`.
+The install provides the `alas` and `alas-save-ignore` commands. The `ai` extra (`anthropic`) is only needed for `--ai` and the `ml` extra (`scikit-learn`, `numpy`) for `--train`. The core requirements are `pyspellchecker` and `pymongo`. Prefer pipx or a clean virtual environment: the unrelated package named `spellchecker` breaks imports of `pyspellchecker` in shared environments.
 
 ## Setup
 
@@ -39,6 +61,8 @@ Run `alas --init` to write an example `config.json` in the current directory (or
 
 Each repository names the directory to walk with `path`: absolute, `~`-prefixed, or relative to the config file's directory. `source_dir` is optional and is joined onto `path`. The older `settings.repo_base_full_path` + `relative_path` + `source_dir` form still works when `path` is absent.
 
+`config_dir` is a reserved config key: the loader sets it to the directory of the loaded config file and uses it to resolve relative paths, so do not set it yourself.
+
 Both `alas` and `alas-save-ignore` look for the config in this order: `--config PATH` (`alas` only), `ABO_CONFIG`, `./config.json`, then `$XDG_CONFIG_HOME/alas-but-one/config.json` (default `~/.config/alas-but-one/config.json`).
 
 `--log FILE` (or `settings.log_file`; `--log` wins, relative `log_file` resolves against the config file's directory) writes a DEBUG log of each stage's item count and elapsed time and each AI batch's raw response or failure. Stdout is unchanged; with neither set, no log file is created.
@@ -56,12 +80,13 @@ Markdown masking removes fenced/indented code, inline backtick code, initial YAM
 ```bash
 alas                               # run all repos, JSONL output (default)
 alas --format csv                  # CSV output instead
+alas --output-dir out              # write outputs to ./out
 alas --repo "My Docs"              # single repo by display name
 alas --ai                          # AI review of borderline tokens
 alas --parallel                    # process repos concurrently
 alas --include-ignored             # audit or reverse prior ignore decisions
-alas --fail-above 0.8               # CI gate: exit 1 if any non-ignored candidate scores >= 0.8
-alas --fail-above 0.8 --quiet       # ...and print only those candidates
+alas --fail-above 0.8              # CI gate: exit 1 if any non-ignored candidate scores >= 0.8
+alas --fail-above 0.8 --quiet      # ...and print only those candidates
 alas --verbose                     # per-stage token counts
 alas --log run.log                 # debug log file (or settings.log_file)
 alas --train labels.jsonl          # train ML classifier from labeled output
@@ -80,7 +105,7 @@ alas --fail-above 0.8 --quiet || echo "typo candidates found"
 
 ## Output
 
-Each run produces `<repo name>.jsonl` (or `.csv` with `--format csv`), one record per candidate, sorted by `confidence` descending:
+Each run produces `<repository key>.jsonl` (the key under `repositories`, not the display name; `.csv` with `--format csv`) in `settings.output_dir` (default: the config file's directory; relative values resolve against the config file, like `path`). `--output-dir DIR` overrides it and is relative to the current directory, one record per candidate, sorted by `confidence` descending:
 
 ```jsonc
 {
@@ -116,7 +141,7 @@ The spell checker flags unknown words and computes a `confidence` score using ed
 
 **AI review (optional, `--ai`)**
 
-Tokens with confidence between 0.3 and 0.7 — the borderline cases where the heuristic is uncertain — are sent to Anthropic's API in batches. Each word is sent with its context: the source line it first appears on plus the lines directly above and below (up to three lines, joined with ` | `). Set `ai.send_context` to `false` to send bare words only, with no document text or file paths; this is recommended for confidential documentation, though suggestions may be less accurate without context. Approved terms are excluded even with `--include-ignored`. Claude updates `confidence`, `suggestion`, and `ai_comment` for each. Responses use Anthropic structured outputs (a JSON schema), so no text parsing is involved. A batch fails as a whole, leaving its tokens unchanged, if the model refuses, is truncated, or returns a word list that differs from the request (missing, extra or duplicate words). The configured `ai.model` must support structured outputs. Requires `ANTHROPIC_API_KEY` to be set.
+Tokens with confidence between 0.3 and 0.7 (the borderline cases where the heuristic is uncertain) are sent to Anthropic's API in batches. Each word is sent with its context: the source line it first appears on plus the lines directly above and below (up to three lines, joined with ` | `). Set `ai.send_context` to `false` to send bare words only, with no document text or file paths; this is recommended for confidential documentation, though suggestions may be less accurate without context. Approved terms are excluded even with `--include-ignored`. Claude updates `confidence`, `suggestion`, and `ai_comment` for each. Responses use Anthropic structured outputs (a JSON schema), so no text parsing is involved. A batch fails as a whole, leaving its tokens unchanged, if the model refuses, is truncated, or returns a word list that differs from the request (missing, extra or duplicate words). The configured `ai.model` must support structured outputs. Requires `ANTHROPIC_API_KEY` to be set.
 
 The review thresholds and model are configurable in `config.json`:
 
@@ -135,8 +160,8 @@ The review thresholds and model are configurable in `config.json`:
 
 After reviewing output, set `"label"` on records you want to use as training data:
 
-- `"true_positive"` — real typo
-- `"false_positive"` — legitimate term (jargon, acronym, product name, etc.)
+- `"true_positive"`: real typo
+- `"false_positive"`: legitimate term (jargon, acronym, product name, etc.)
 
 Then train:
 
@@ -144,7 +169,7 @@ Then train:
 alas --train output.jsonl
 ```
 
-This fits a logistic regression classifier on your labeled examples and saves it to `models/classifier.pkl`. Subsequent runs automatically use it to replace heuristic scores with ML-predicted probabilities. Re-label and re-train as the model improves.
+This fits a logistic regression classifier on your labeled examples and saves it to `settings.training.model_path` (default `models/classifier.json`, relative to the config file). Subsequent runs automatically use it to replace heuristic scores with ML-predicted probabilities. Re-label and re-train as the model improves.
 
 The seven-feature vector keeps the `is_all_upper` slot but now stores the same uppercase ratio used by scoring. **Retrain existing classifiers** to learn the repaired feature; models are not deleted or retrained automatically. New JSONL exports preserve the count when loaded for training. Legacy records infer casing from an uppercase `word` and its location count; already-lowercased records use zero because lost casing cannot be recovered.
 
@@ -160,7 +185,7 @@ Default JSONL/CSV output omits approved words. To audit or remove an existing ap
 
 ```bash
 alas --include-ignored             # add --format csv if needed
-alas-save-ignore "My Docs.jsonl"  # or reviewed CSV
+alas-save-ignore my-docs.jsonl  # or reviewed CSV
 ```
 
 In JSONL, set `"ignore": true` to add a word and `false` to remove it. In CSV, use `Y` and `N`. Audit exports restore approved terms with their flags intact, so setting them to false/N and saving reverses the decision. Repeated additions are idempotent, and repository decisions remain isolated. MongoDB (or the file backend below) must be available for normal scans and saving; the offline checks below mock that boundary.
@@ -183,7 +208,7 @@ To add a new matcher or formatter:
 
 ## Offline checks and evaluation
 
-Run from this directory after `pip install -e .`; MongoDB, API credentials and a trained model are unnecessary:
+Run from a clone after `pip install -e .`; MongoDB, API credentials and a trained model are unnecessary:
 
 ```bash
 python3 -m unittest discover -s tests -v

@@ -1,7 +1,7 @@
 import csv
 from typing import Dict
 
-from alas_but_one.tasks.base_task import BaseTask
+from alas_but_one.tasks.base_task import BaseTask, output_path
 from alas_but_one.models.token import Token
 from alas_but_one.ai.reviewer import get_source_line
 
@@ -16,7 +16,7 @@ class CsvFormatterTask(BaseTask):
 
     def run(self, tokens: Dict[str, Token], content_map=None) -> str:
         validated_tokens = self.validate_input(tokens)
-        output_file = f"{self.repo_config['name']}.csv"
+        output_file = output_path(self.settings_config, self.repo_config, 'csv')
 
         sorted_tokens = sorted(
             validated_tokens.values(), key=lambda t: (-t.confidence, t.text)

@@ -74,13 +74,13 @@ def main():
     with tempfile.TemporaryDirectory() as directory, chdir(directory):
         Path('evaluation.rst').write_text((DATA / 'evaluation.rst').read_text())
         settings = {**config['settings'],
-                    'maxOccurrences': manifest['maxOccurrences'], 'ai': {'enabled': False}}
+                    'maxOccurrences': manifest['maxOccurrences'], 'ai': {'enabled': False}, 'output_dir': directory}
         repo = {'name': 'offline-evaluation', 'path': directory, 'source_dir': ''}
         # Replace only the external MongoDB read. Real collection, masking,
         # scoring, review filtering and formatter run through the CLI pipeline.
         with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set(manifest['approved_terms'])):
             path = run_repo('evaluation', repo, settings, config.get('modules', {}), 'jsonl', False,
-                            MLPredictor(str(Path(directory) / 'absent.pkl')), False)
+                            MLPredictor(str(Path(directory) / 'absent.json')), False)
         after = read_jsonl(path)
         for record in after:
             for location in record['locations']:

@@ -5,28 +5,40 @@ Guidance for Claude Code when working in this repository.
 ## Purpose
 
 `alas-but-one` finds **atomic typo candidates** in documentation: words
-that appear at most N times (default: 1) across a corpus of `.rst`/`.txt` files.
+that appear at most N times (default: 1) across a corpus of `.rst`, `.txt` and `.md` files.
 Rare words are surface candidates; human or AI review confirms whether they are
 real typos or legitimate technical terms.
 
 ## Commands
 
 ```bash
-alas                          # run, JSONL output (default)
-alas --format csv             # CSV output
-alas --repo "Golang Driver Docs"  # single repo
-alas --ai                     # AI review of borderline tokens
-alas --verbose                # per-stage token counts
-alas --log run.log            # DEBUG log: stage timings, raw AI responses
-alas --parallel               # parallel repo processing
-alas --fail-above 0.8       # CI: exit 1 if a non-ignored candidate has confidence >= 0.8
-alas --fail-above 0.8 --quiet  # CI: print only those (repo<TAB>word<TAB>confidence<TAB>file:line)
-alas --train labels.jsonl     # train ML model from labeled data
+pipx install alas-but-one        # or: pip install 'alas-but-one[ai,ml]' in a venv
+pip install -e '.[ai,ml]'        # from a clone, for development
 ```
+
+| Command | Purpose |
+|---|---|
+| `alas --init` | write an example config.json (to `--config PATH`, default `./config.json`); never overwrites |
+| `alas` | run all repos, JSONL output (default) |
+| `alas --format csv` | CSV output |
+| `alas --output-dir out` | outputs to ./out (default: settings.output_dir, config-relative) |
+| `alas --repo "Golang Driver Docs"` | single repo |
+| `alas --ai` | AI review of borderline tokens |
+| `alas --parallel` | parallel repo processing |
+| `alas --include-ignored` | audit or reverse prior ignore decisions |
+| `alas --fail-above 0.8` | CI: exit 1 if a non-ignored candidate has confidence >= 0.8 |
+| `alas --fail-above 0.8 --quiet` | CI: print only those (repo, word, confidence, file:line, tab-separated) |
+| `alas --verbose` | per-stage token counts |
+| `alas --log run.log` | DEBUG log: stage timings, raw AI responses |
+| `alas --train labels.jsonl` | train ML model from labeled data |
+| `alas --config PATH` | config file elsewhere (or set `ABO_CONFIG`) |
+| `alas-save-ignore FILE` | save reviewed JSONL or CSV ignore decisions |
+
+Config search order: `--config` > `ABO_CONFIG` > `./config.json` > `$XDG_CONFIG_HOME/alas-but-one/config.json`. `config_dir` is a reserved config key set by the loader to the config file's directory; never set it in a config.
 
 ## Architecture
 
-Code lives in `src/alas_but_one/` (install with `pip install -e '.[ai,ml]'`); module paths below are relative to it. Tests: `python -m unittest discover -s tests`.
+Code lives in `src/alas_but_one/` (dev install above); module paths below are relative to it. Tests: `python -m unittest discover -s tests`.
 
 ### Pipeline stages (in order)
 
@@ -46,8 +58,8 @@ collector → reader → tokenizer → max_occurrence_matcher
 | ignore_list_matcher | `matchers/ignore_list_matcher.py` | sets `token.ignore` from ignore list store |
 | ml_predictor | `training/predictor.py` | overrides `token.confidence` if trained model exists |
 | ai_reviewer | `ai/reviewer.py` | sends borderline tokens to Claude; updates confidence + suggestion |
-| jsonl_formatter | `formatters/jsonl_formatter.py` | writes `<repo>.jsonl` sorted by confidence desc |
-| csv_formatter | `formatters/csv_formatter.py` | writes `<repo>.csv` (backward compat) |
+| jsonl_formatter | `formatters/jsonl_formatter.py` | writes `<key>.jsonl` (in `settings.output_dir`) sorted by confidence desc |
+| csv_formatter | `formatters/csv_formatter.py` | writes `<key>.csv` (backward compat) |
 
 ### Key types
 
@@ -80,10 +92,10 @@ Scores are 0.0–1.0 (higher = more likely a real typo):
 
 ### ML training loop
 
-1. Run the tool to generate `<repo>.jsonl`
+1. Run the tool to generate `<key>.jsonl`
 2. Open the file and set `"label"` field: `"true_positive"` or `"false_positive"`
-3. Run `alas --train <repo>.jsonl` to fit a logistic regression classifier
-4. Subsequent runs use `models/classifier.pkl` to override heuristic confidence scores
+3. Run `alas --train <key>.jsonl` to fit a logistic regression classifier
+4. Subsequent runs use `models/classifier.json` (config-relative `training.model_path`) to override heuristic confidence scores
 5. Re-label and re-train as the model improves
 
 Features used: `is_misspelled`, `spell_confidence`, `edit_distance_norm`,
@@ -131,4 +143,4 @@ Requires `ANTHROPIC_API_KEY` environment variable.
 }
 ```
 
-Records are sorted by `confidence` descending — highest-priority candidates first.
+Records are sorted by `confidence` descending, highest-priority candidates first.

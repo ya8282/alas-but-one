@@ -163,6 +163,42 @@ class RegressionTests(unittest.TestCase):
             confidence, suggestion = compute_confidence('internationalizationn', True, checker)
             self.assertEqual((confidence, suggestion is not None), (0.51, True))
 
+    def test_json_model_matches_sklearn_and_pkl_refused(self):
+        try:
+            import numpy as np
+            from sklearn.linear_model import LogisticRegression
+            from sklearn.pipeline import make_pipeline
+            from sklearn.preprocessing import StandardScaler
+        except ImportError:
+            self.skipTest('scikit-learn not installed')
+        from alas_but_one.training.features import extract
+        from alas_but_one.training.predictor import MLPredictor
+        from alas_but_one.training.trainer import load_labeled_jsonl, train
+        rows = [
+            {'word': w, 'misspelled': m, 'confidence': c, 'label': label,
+             'locations': [{'file': 'a.rst', 'line': 1}]}
+            for w, m, c, label in [('teh', True, .9, 'true_positive'), ('recieve', True, .8, 'true_positive'),
+                               ('API', False, .1, 'false_positive'), ('kubectl', True, .3, 'false_positive')] * 3
+        ]
+        checker = Mock()
+        checker.correction.return_value = None
+        with tempfile.TemporaryDirectory() as directory, patch('alas_but_one.training.features._get_checker', return_value=checker):
+            labels = Path(directory) / 'l.jsonl'
+            labels.write_text('\n'.join(json.dumps(r) for r in rows))
+            out = str(Path(directory) / 'm.json')
+            with redirect_stdout(io.StringIO()):
+                self.assertTrue(train(str(labels), out, min_samples=4))
+            X, y = load_labeled_jsonl(str(labels))
+            ref = make_pipeline(StandardScaler(), LogisticRegression(max_iter=500)).fit(np.array(X), np.array(y))
+            predictor = MLPredictor(out)
+            predictor._load()
+            token = Token(text='teh', repo='r', locations=[TokenLocation(filename='a.rst', line=1)],
+                          misspelled=True, confidence=.9)
+            self.assertAlmostEqual(predictor.predict_confidence(token),
+                                   ref.predict_proba(np.array([extract(token)]))[0][1], places=3)
+            with self.assertRaisesRegex(ValueError, r'--train'):
+                MLPredictor(str(Path(directory) / 'classifier.pkl'))
+
     def test_casing_exports_training_round_trip_and_legacy(self):
         from alas_but_one.training.features import extract
         from alas_but_one.training.trainer import load_labeled_jsonl
@@ -336,7 +372,7 @@ class RegressionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, chdir(directory):
             Path('sample.txt').write_text('MongoDB retreive ordinary')
             repo = {'name':'test','relative_path':'','source_dir':''}
-            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}}
+            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}, 'output_dir':directory}
             for output_format in ['jsonl','csv']:
                 for include_ignored in [False, True]:
                     with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value={'mongodb'}):
@@ -373,7 +409,7 @@ class RegressionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, chdir(directory):
             Path('sample.txt').write_text('retreive ordinary')
             repo = {'name':'test','relative_path':'','source_dir':''}
-            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}}
+            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}, 'output_dir':directory}
             outputs = {}
             for verbose in [True, False]:
                 buffer = io.StringIO()
@@ -771,7 +807,7 @@ class FailAboveTests(unittest.TestCase):
         from contextlib import chdir
         import alas_but_one.cli as alas
         base = alas.load_config()
-        config = {'settings': {**base['settings'], 'ai': {'enabled': False}}, 'modules': base.get('modules', {}), 'repositories': {
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, 'output_dir': directory}, 'modules': base.get('modules', {}), 'repositories': {
             'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
         out, err = io.StringIO(), io.StringIO()
         code = 0
@@ -798,7 +834,7 @@ class FailAboveTests(unittest.TestCase):
             self.assertGreater(score, 0.5)
             self.assertEqual(self._run(directory, '--fail-above', f'{score:.2f}')[0], 1)
             self.assertEqual(self._run(directory, '--fail-above', f'{score + 0.01:.2f}')[0], 0)
-            self.assertTrue(os.path.exists(os.path.join(directory, 'test.jsonl')))
+            self.assertTrue(os.path.exists(os.path.join(directory, 'r.jsonl')))
 
     def test_ignored_candidates_never_fail_even_with_include_ignored(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -807,7 +843,7 @@ class FailAboveTests(unittest.TestCase):
                 code, out, _ = self._run(directory, '--fail-above', '0', '--quiet', *flags, ignored={'retreive'})
                 self.assertEqual(out.count('retreive'), 0)
                 self.assertEqual(self._run(directory, '--fail-above', '0.5', *flags, ignored={'retreive'})[0], 0)
-            self.assertIn('retreive', Path(directory, 'test.jsonl').read_text())
+            self.assertIn('retreive', Path(directory, 'r.jsonl').read_text())
 
     def test_quiet_prints_only_qualifying_lines_and_requires_fail_above(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -900,7 +936,7 @@ class LogFileTests(unittest.TestCase):
         from contextlib import chdir
         import alas_but_one.cli as alas
         base = alas.load_config()
-        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, **(settings or {})}, 'modules': base.get('modules', {}), 'repositories': {
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, 'output_dir': directory, **(settings or {})}, 'modules': base.get('modules', {}), 'repositories': {
             'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
         buffer = io.StringIO()
         with chdir(directory), redirect_stdout(buffer), patch('sys.argv', ['alas.py', *flags]), \

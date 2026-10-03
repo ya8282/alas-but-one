@@ -9,14 +9,14 @@ Usage:
   alas --train path/to/labeled.jsonl
 """
 import json
-import pickle
 import sys
 from pathlib import Path
 from typing import List, Tuple
 
 from alas_but_one.models.token import Token
 from alas_but_one.models.token_location import TokenLocation
-from alas_but_one.training.features import extract
+from alas_but_one.training.features import FEATURE_NAMES, extract
+from alas_but_one.training.predictor import check_model_path
 
 
 def load_labeled_jsonl(path: str) -> Tuple[List[List[float]], List[int]]:
@@ -64,6 +64,7 @@ def train(jsonl_path: str, model_out: str, min_samples: int = 20) -> bool:
     Train a logistic regression classifier and save it to model_out.
     Returns True on success, False if not enough samples.
     """
+    check_model_path(model_out)
     try:
         from sklearn.linear_model import LogisticRegression
         from sklearn.pipeline import make_pipeline
@@ -91,8 +92,16 @@ def train(jsonl_path: str, model_out: str, min_samples: int = 20) -> bool:
     clf.fit(X_arr, y_arr)
 
     Path(model_out).parent.mkdir(parents=True, exist_ok=True)
-    with open(model_out, 'wb') as f:
-        pickle.dump(clf, f)
+    scaler, lr = clf[0], clf[-1]
+    model = {
+        'features': FEATURE_NAMES,
+        'mean': scaler.mean_.tolist(),
+        'scale': scaler.scale_.tolist(),
+        'weights': lr.coef_[0].tolist(),
+        'intercept': float(lr.intercept_[0]),
+    }
+    with open(model_out, 'w') as f:
+        json.dump(model, f, indent=2)
 
     n_pos = int(y_arr.sum())
     n_neg = len(y_arr) - n_pos
