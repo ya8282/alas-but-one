@@ -1,6 +1,6 @@
 import os, re
 from typing import List, Dict, Any
-from tasks.base_task import BaseTask
+from alas_but_one.tasks.base_task import BaseTask
 
 class CollectorTask(BaseTask):
     def __init__(self, settings_config: Dict[str, Any], repo_config: Dict[str, Any]):

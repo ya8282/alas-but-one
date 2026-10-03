@@ -9,14 +9,14 @@ git clone https://github.com/ccho-mongodb/alas-but-one.git
 cd alas-but-one
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -e '.[ai,ml]'
 ```
 
-`anthropic` and `scikit-learn`/`numpy` are optional — only needed for `--ai` and `--train` respectively. The core requirements are `pyspellchecker` and `pymongo`. Use a clean virtual environment: the unrelated package named `spellchecker` conflicts with `pyspellchecker`.
+The install provides the `alas` and `alas-save-ignore` commands. The `ai` extra (`anthropic`) is only needed for `--ai` and the `ml` extra (`scikit-learn`, `numpy`) for `--train`. The core requirements are `pyspellchecker` and `pymongo`. Use a clean virtual environment: the unrelated package named `spellchecker` conflicts with `pyspellchecker`.
 
 ## Setup
 
-Edit the settings and repositories in `config.json`; keep its existing `modules` section:
+Edit the settings and repositories in `config.json`:
 
 ```json
 {
@@ -39,7 +39,7 @@ Edit the settings and repositories in `config.json`; keep its existing `modules`
 
 Each repository names the directory to walk with `path`: absolute, `~`-prefixed, or relative to the config file's directory. `source_dir` is optional and is joined onto `path`. The older `settings.repo_base_full_path` + `relative_path` + `source_dir` form still works when `path` is absent.
 
-The config file is `./config.json` by default. Point both `alas.py` and `save_ignore_list.py` elsewhere with `ABO_CONFIG=/path/to/config.json`, or pass `--config PATH` to `alas.py`.
+The config file is `./config.json` by default. Point both `alas` and `alas-save-ignore` elsewhere with `ABO_CONFIG=/path/to/config.json`, or pass `--config PATH` to `alas`.
 
 `--log FILE` (or `settings.log_file`; `--log` wins, relative `log_file` resolves against the config file's directory) writes a DEBUG log of each stage's item count and elapsed time and each AI batch's raw response or failure. Stdout is unchanged; with neither set, no log file is created.
 
@@ -54,18 +54,18 @@ Markdown masking removes fenced/indented code, inline backtick code, initial YAM
 ## Usage
 
 ```bash
-python alas.py                               # run all repos, JSONL output (default)
-python alas.py --format csv                  # CSV output instead
-python alas.py --repo "My Docs"              # single repo by display name
-python alas.py --ai                          # AI review of borderline tokens
-python alas.py --parallel                    # process repos concurrently
-python alas.py --include-ignored             # audit or reverse prior ignore decisions
-python alas.py --fail-above 0.8               # CI gate: exit 1 if any non-ignored candidate scores >= 0.8
-python alas.py --fail-above 0.8 --quiet       # ...and print only those candidates
-python alas.py --verbose                     # per-stage token counts
-python alas.py --log run.log                 # debug log file (or settings.log_file)
-python alas.py --train labels.jsonl          # train ML classifier from labeled output
-python alas.py --config ~/abo.json           # config file elsewhere (or set ABO_CONFIG)
+alas                               # run all repos, JSONL output (default)
+alas --format csv                  # CSV output instead
+alas --repo "My Docs"              # single repo by display name
+alas --ai                          # AI review of borderline tokens
+alas --parallel                    # process repos concurrently
+alas --include-ignored             # audit or reverse prior ignore decisions
+alas --fail-above 0.8               # CI gate: exit 1 if any non-ignored candidate scores >= 0.8
+alas --fail-above 0.8 --quiet       # ...and print only those candidates
+alas --verbose                     # per-stage token counts
+alas --log run.log                 # debug log file (or settings.log_file)
+alas --train labels.jsonl          # train ML classifier from labeled output
+alas --config ~/abo.json           # config file elsewhere (or set ABO_CONFIG)
 ```
 
 ### CI mode
@@ -75,7 +75,7 @@ python alas.py --config ~/abo.json           # config file elsewhere (or set ABO
 `--quiet` (requires `--fail-above`) suppresses progress output and prints only the qualifying candidates to stdout, one per line, tab-separated: `repo`, `word`, `confidence`, `file:line` (first location). Repo scan failures go to stderr; AI reviewer messages, including batch failures, are suppressed, so use --log to see them.
 
 ```bash
-python alas.py --fail-above 0.8 --quiet || echo "typo candidates found"
+alas --fail-above 0.8 --quiet || echo "typo candidates found"
 ```
 
 ## Output
@@ -104,7 +104,7 @@ Locations are **1-based source lines** in both JSONL and CSV. Regenerate older e
 
 Words and vocabulary keys stay lowercase. `uppercase_occurrences` counts ALL-CAPS surfaces longer than one character, and `uppercase_ratio` is that count divided by the number of locations (zero for no locations). `HTTP http HTTP` is one token with three locations and two uppercase occurrences; `Http` and `I` do not count as acronyms. Both exports include the count.
 
-Default output omits approved words only. Low-confidence candidates remain in the queue; `confidence_threshold` does not filter exports. Direct formatter calls export every supplied token.
+Default output omits approved words only. Low-confidence candidates remain in the queue. Direct formatter calls export every supplied token.
 
 ## How Classification Works
 
@@ -141,7 +141,7 @@ After reviewing output, set `"label"` on records you want to use as training dat
 Then train:
 
 ```bash
-python alas.py --train output.jsonl
+alas --train output.jsonl
 ```
 
 This fits a logistic regression classifier on your labeled examples and saves it to `models/classifier.pkl`. Subsequent runs automatically use it to replace heuristic scores with ML-predicted probabilities. Re-label and re-train as the model improves.
@@ -159,8 +159,8 @@ For both scanning and saving, `ABO_MONGO_URI` overrides `settings.MONGODB_URI` w
 Default JSONL/CSV output omits approved words. To audit or remove an existing approval:
 
 ```bash
-python alas.py --include-ignored             # add --format csv if needed
-python save_ignore_list.py "My Docs.jsonl"  # or reviewed CSV
+alas --include-ignored             # add --format csv if needed
+alas-save-ignore "My Docs.jsonl"  # or reviewed CSV
 ```
 
 In JSONL, set `"ignore": true` to add a word and `false` to remove it. In CSV, use `Y` and `N`. Audit exports restore approved terms with their flags intact, so setting them to false/N and saving reverses the decision. Repeated additions are idempotent, and repository decisions remain isolated. MongoDB (or the file backend below) must be available for normal scans and saving; the offline checks below mock that boundary.
@@ -177,29 +177,18 @@ collector → reader → tokenizer → max_occurrence_matcher
 
 To add a new matcher or formatter:
 
-1. Create a file in `matchers/` or `formatters/`, subclass `BaseTask`, implement `run()`
-2. Register it in `config.json` under `"modules"`
-3. Add it to the pipeline in `alas.py`
-
-To hook into existing stages without modifying them:
-
-```python
-from ai.hooks import default_hooks
-
-@default_hooks.post_stage('spell_checker')
-def my_hook(stage_name, data):
-    # data is Dict[word, Token] after spell check
-    return data  # must return data
-```
+1. Create a file in `src/alas_but_one/matchers/` or `formatters/`, subclass `BaseTask`, implement `run()`
+2. Register it in `src/alas_but_one/registry.py` (a config `"modules"` block, if present, overrides the defaults)
+3. Add it to the pipeline in `src/alas_but_one/cli.py`
 
 ## Offline checks and evaluation
 
-Run from this directory with the core dependencies installed; MongoDB, API credentials and a trained model are unnecessary:
+Run from this directory after `pip install -e .`; MongoDB, API credentials and a trained model are unnecessary:
 
 ```bash
-python3 -m unittest discover -s tests -p 'test_regressions.py' -v
+python3 -m unittest discover -s tests -v
 python3 tests/evaluate_candidates.py --output /tmp/alas-after.jsonl
-python3 alas.py --help
+alas --help
 ```
 
 The evaluator runs the real pipeline against `tests/data/evaluation.rst`, replacing only the MongoDB read with an in-memory approved-term set. AI and trained-model overrides are disabled. Every emitted word needs an explicit label in `tests/data/labels.jsonl`; unlabeled candidates fail evaluation. Precision includes all emitted candidates, including correctly spelled rare words, and an empty queue reports undefined precision (`null`).

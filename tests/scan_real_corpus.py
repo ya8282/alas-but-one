@@ -1,5 +1,6 @@
 """Offline scan of a local corpus, optionally using archived pre-fix stages."""
 import argparse
+import importlib
 from contextlib import chdir
 from pathlib import Path
 import sys
@@ -21,18 +22,21 @@ def main():
     output = Path(args.output).resolve()
     if not corpus.is_dir():
         parser.error('corpus must be an existing directory')
-    sys.path.insert(0, str(ROOT))
     with tempfile.TemporaryDirectory() as directory:
         if args.baseline:
             with zipfile.ZipFile(ROOT / 'tests/data/baseline_source.zip') as archive:
                 archive.extractall(directory)
             sys.path.insert(0, directory)
-        from collectors.filter_files import CollectorTask
-        from collectors.read_content import ReaderTask
-        from tokenizer.tokenize_rst import TokenizerTask
-        from matchers.max_occurrence_matcher import MaxOccurrenceMatcherTask
-        from matchers.spell_checker import SpellCheckerTask
-        from formatters.jsonl_formatter import JsonlFormatterTask
+            # Stages absent from the archive (collectors, ai, ignore_list_store) resolve flat to current code.
+            sys.path.append(str(ROOT / 'src' / 'alas_but_one'))
+        # The archive holds the old flat layout; current code is the installed package.
+        prefix = '' if args.baseline else 'alas_but_one.'
+        CollectorTask = importlib.import_module(prefix + 'collectors.filter_files').CollectorTask
+        ReaderTask = importlib.import_module(prefix + 'collectors.read_content').ReaderTask
+        TokenizerTask = importlib.import_module(prefix + 'tokenizer.tokenize_rst').TokenizerTask
+        MaxOccurrenceMatcherTask = importlib.import_module(prefix + 'matchers.max_occurrence_matcher').MaxOccurrenceMatcherTask
+        SpellCheckerTask = importlib.import_module(prefix + 'matchers.spell_checker').SpellCheckerTask
+        JsonlFormatterTask = importlib.import_module(prefix + 'formatters.jsonl_formatter').JsonlFormatterTask
         settings = {'maxOccurrences': 1}
         if args.ignore_file:
             settings['ignore_list'] = {'file': str(Path(args.ignore_file).resolve())}
@@ -57,7 +61,7 @@ def main():
         tokens = timed('max_occurrence_matcher', MaxOccurrenceMatcherTask(settings, repo), tokens)
         tokens = timed('spell_checker', SpellCheckerTask(settings, repo), tokens)
         if args.ignore_file:
-            from matchers.ignore_list_matcher import IgnoreListTask
+            IgnoreListTask = importlib.import_module(prefix + 'matchers.ignore_list_matcher').IgnoreListTask
             tokens = IgnoreListTask(settings, repo).run(tokens)
             tokens = {w: t for w, t in tokens.items() if t.ignore != 'Y'}
         with chdir(directory):

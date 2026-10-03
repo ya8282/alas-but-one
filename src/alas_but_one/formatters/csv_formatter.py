@@ -1,9 +1,9 @@
 import csv
 from typing import Dict
 
-from tasks.base_task import BaseTask
-from models.token import Token
-from ai.reviewer import get_source_line
+from alas_but_one.tasks.base_task import BaseTask
+from alas_but_one.models.token import Token
+from alas_but_one.ai.reviewer import get_source_line
 
 
 class CsvFormatterTask(BaseTask):

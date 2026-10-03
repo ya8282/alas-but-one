@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, List
-from tasks.base_task import BaseTask
+from alas_but_one.tasks.base_task import BaseTask
 
 logger = logging.getLogger(__name__)
 

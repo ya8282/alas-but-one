@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Dict, List, Optional
 
-from models.token import Token
+from alas_but_one.models.token import Token
 
 logger = logging.getLogger(__name__)
 

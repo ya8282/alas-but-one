@@ -13,13 +13,13 @@ from unittest.mock import Mock, patch
 # Eval scripts live beside this file; make them importable under any runner.
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from tokenizer.tokenize_rst import TokenizerTask
-from models.token import Token
-from models.token_location import TokenLocation
-from ai.reviewer import AIReviewer
-from formatters.jsonl_formatter import JsonlFormatterTask
-from formatters.csv_formatter import CsvFormatterTask
-from collectors.read_content import ReaderTask
+from alas_but_one.tokenizer.tokenize_rst import TokenizerTask
+from alas_but_one.models.token import Token
+from alas_but_one.models.token_location import TokenLocation
+from alas_but_one.ai.reviewer import AIReviewer
+from alas_but_one.formatters.jsonl_formatter import JsonlFormatterTask
+from alas_but_one.formatters.csv_formatter import CsvFormatterTask
+from alas_but_one.collectors.read_content import ReaderTask
 
 
 class RegressionTests(unittest.TestCase):
@@ -33,7 +33,7 @@ class RegressionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, 'latin1.rst')
             Path(path).write_bytes(b'caf\xe9 ok\n')
-            with self.assertLogs('collectors.read_content', 'WARNING') as logs:
+            with self.assertLogs('alas_but_one.collectors.read_content', 'WARNING') as logs:
                 content = ReaderTask({}, {'name': 'test'}).run([path])
             self.assertIn('ok', content[path])
             self.assertIn('\ufffd', content[path])
@@ -86,7 +86,7 @@ class RegressionTests(unittest.TestCase):
 
 
     def test_casing_counts_and_scores_are_order_independent(self):
-        from matchers.spell_checker import SpellCheckerTask
+        from alas_but_one.matchers.spell_checker import SpellCheckerTask
         checker = Mock()
         checker.unknown.return_value = {'http', 'i'}
         checker.correction.side_effect = lambda word: None
@@ -97,14 +97,14 @@ class RegressionTests(unittest.TestCase):
             self.assertEqual(tokens['http'].uppercase_occurrences, 2)
             self.assertEqual(tokens['http'].uppercase_ratio, 0.5)
             self.assertEqual(tokens['i'].uppercase_occurrences, 0)
-            with patch('matchers.spell_checker.SpellChecker', return_value=checker):
+            with patch('alas_but_one.matchers.spell_checker.SpellChecker', return_value=checker):
                 SpellCheckerTask({}, {}).run(tokens)
             results.append(tokens['http'].confidence)
         self.assertEqual(results, [0.3, 0.3])
         self.assertEqual(Token('empty', 'test', []).uppercase_ratio, 0)
 
     def test_hyphenated_compound_is_one_token_judged_by_its_components(self):
-        from matchers.spell_checker import SpellCheckerTask
+        from alas_but_one.matchers.spell_checker import SpellCheckerTask
         content = {'sample.txt': 'Act pre-emptively.\nAdd-ons and how-tos.\n\nA well-knwon trick.'}
         tokens = TokenizerTask({}, {'name': 'test'}).run(content)
         self.assertEqual(set(tokens), {'act', 'pre-emptively', 'add-ons', 'and', 'how-tos', 'a', 'well-knwon', 'trick'})
@@ -121,15 +121,15 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(tokens['knwon-knwonly'].suggestion, 'known-knwonly')
 
     def test_ignore_list_covers_compound_of_listed_component(self):
-        from matchers.ignore_list_matcher import IgnoreListTask
+        from alas_but_one.matchers.ignore_list_matcher import IgnoreListTask
         tokens = TokenizerTask({}, {'name': 'repo'}).run({'a.txt': 'graphile-worker graphile-wroker graphile'})
-        with patch('matchers.ignore_list_matcher.load_words', return_value={'graphile'}):
+        with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value={'graphile'}):
             result = IgnoreListTask({}, {'name': 'repo'}).run(tokens)
         self.assertEqual({w: t.ignore for w, t in result.items()},
                          {'graphile-worker': 'Y', 'graphile-wroker': 'N', 'graphile': 'Y'})
 
     def test_compound_with_frequent_component_stays_trusted(self):
-        from matchers.spell_checker import SpellCheckerTask
+        from alas_but_one.matchers.spell_checker import SpellCheckerTask
         settings = {'maxOccurrences': 1}
         content = {'a.txt': 'zzyx-alpha\nzzyx-beta\nzzyx\nqqwv-gamma'}
         tokens = TokenizerTask(settings, {'name': 'test'}).run(content)
@@ -137,7 +137,7 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual({w for w, t in tokens.items() if t.misspelled}, {'qqwv-gamma'})
 
     def test_acronym_score_interpolates_and_standalone_casing_survives(self):
-        from matchers.confidence_scorer import compute_confidence
+        from alas_but_one.matchers.confidence_scorer import compute_confidence
         checker = Mock()
         checker.correction.return_value = None
         for ratio, expected in [(0, 0.4), (0.5, 0.3), (1, 0.2)]:
@@ -148,7 +148,7 @@ class RegressionTests(unittest.TestCase):
 
     def test_long_identifiers_skip_edit_distance_two_but_prose_typos_keep_suggestions(self):
         from spellchecker import SpellChecker
-        from matchers.confidence_scorer import compute_confidence, MAX_EDIT2_LENGTH
+        from alas_but_one.matchers.confidence_scorer import compute_confidence, MAX_EDIT2_LENGTH
         checker = SpellChecker()
         with patch.object(SpellChecker, '_SpellChecker__edit_distance_alt', autospec=True,
                           side_effect=SpellChecker._SpellChecker__edit_distance_alt) as ed2:
@@ -164,14 +164,14 @@ class RegressionTests(unittest.TestCase):
             self.assertEqual((confidence, suggestion is not None), (0.51, True))
 
     def test_casing_exports_training_round_trip_and_legacy(self):
-        from training.features import extract
-        from training.trainer import load_labeled_jsonl
+        from alas_but_one.training.features import extract
+        from alas_but_one.training.trainer import load_labeled_jsonl
         from contextlib import chdir
         tokens = TokenizerTask({}, {'name': 'test'}).run({'sample.txt': 'HTTP http HTTP'})
         tokens['http'].label = 'false_positive'
         checker = Mock()
         checker.correction.return_value = None
-        with tempfile.TemporaryDirectory() as directory, chdir(directory), patch('training.features._get_checker', return_value=checker):
+        with tempfile.TemporaryDirectory() as directory, chdir(directory), patch('alas_but_one.training.features._get_checker', return_value=checker):
             path = JsonlFormatterTask({}, {'name': 'test'}).run(tokens)
             record = json.loads(Path(path).read_text())
             self.assertEqual(record['uppercase_occurrences'], 2)
@@ -191,27 +191,27 @@ class RegressionTests(unittest.TestCase):
 
 
     def test_mongo_settings_precedence_and_validation(self):
-        from ignore_list_store import resolve_ignore_list_settings, load_words, apply_decisions
+        from alas_but_one.ignore_list_store import resolve_ignore_list_settings, load_words, apply_decisions
         settings = {'MONGODB_URI': 'mongodb://config', 'ignore_list': {'database': 'db', 'collection': 'words'}}
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(resolve_ignore_list_settings(settings), ('mongodb://config', 'db', 'words'))
         with patch.dict(os.environ, {'ABO_MONGO_URI': 'mongodb://override'}, clear=True):
             self.assertEqual(resolve_ignore_list_settings(settings), ('mongodb://override', 'db', 'words'))
         for value in ['', '  ']:
-            with patch.dict(os.environ, {'ABO_MONGO_URI': value}, clear=True), patch('ignore_list_store.MongoClient') as client:
+            with patch.dict(os.environ, {'ABO_MONGO_URI': value}, clear=True), patch('alas_but_one.ignore_list_store.MongoClient') as client:
                 for operation in [lambda: load_words('repo', settings), lambda: apply_decisions('repo', {'word': True}, settings)]:
                     with self.assertRaisesRegex(ValueError, 'ABO_MONGO_URI'):
                         operation()
                 client.assert_not_called()
         for invalid in [{}, {'MONGODB_URI': 'mongodb://secret', 'ignore_list': {'database': '', 'collection': 'words'}}, {'MONGODB_URI': 1, 'ignore_list': {'database': 'db', 'collection': 'words'}}]:
-            with patch.dict(os.environ, {}, clear=True), patch('ignore_list_store.MongoClient') as client:
+            with patch.dict(os.environ, {}, clear=True), patch('alas_but_one.ignore_list_store.MongoClient') as client:
                 with self.assertRaises(ValueError) as caught:
                     load_words('repo', invalid)
                 self.assertNotIn('secret', str(caught.exception))
                 client.assert_not_called()
 
     def test_mongo_operations_select_same_store_and_close_clients(self):
-        from ignore_list_store import load_words, apply_decisions
+        from alas_but_one.ignore_list_store import load_words, apply_decisions
         settings = {'MONGODB_URI': 'mongodb://config', 'ignore_list': {'database': 'db', 'collection': 'words'}}
         # In-memory Mongo boundary executes the concrete UpdateOne documents.
         state = {'other': {'untouched'}}
@@ -231,7 +231,7 @@ class RegressionTests(unittest.TestCase):
         database = Mock()
         client.__getitem__ = Mock(return_value=database)
         database.__getitem__ = Mock(return_value=collection)
-        with patch.dict(os.environ, {'ABO_MONGO_URI': 'mongodb://override'}, clear=True), patch('ignore_list_store.MongoClient', return_value=client) as constructor:
+        with patch.dict(os.environ, {'ABO_MONGO_URI': 'mongodb://override'}, clear=True), patch('alas_but_one.ignore_list_store.MongoClient', return_value=client) as constructor:
             apply_decisions('repo', {'term': True, 'remove': True}, settings)
             apply_decisions('repo', {'term': True, 'remove': False}, settings)
             self.assertEqual(load_words('repo', settings), {'term'})
@@ -254,15 +254,15 @@ class RegressionTests(unittest.TestCase):
             self.assertEqual(client.close.call_count, 6)
 
     def test_ignore_consumers_use_shared_operations(self):
-        from matchers.ignore_list_matcher import IgnoreListTask
-        import save_ignore_list
+        from alas_but_one.matchers.ignore_list_matcher import IgnoreListTask
+        import alas_but_one.save_ignore_list as save_ignore_list
         tokens = {'approved': Token('approved', 'repo', []), 'typo': Token('typo', 'repo', [])}
-        with patch('matchers.ignore_list_matcher.load_words', return_value={'approved'}) as load:
+        with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value={'approved'}) as load:
             result = IgnoreListTask({}, {'name': 'repo'}).run(tokens)
             self.assertEqual(result['approved'].ignore, 'Y')
             self.assertEqual(result['typo'].ignore, 'N')
             load.assert_called_once_with('repo', {})
-        with patch('save_ignore_list.apply_decisions') as apply:
+        with patch('alas_but_one.save_ignore_list.apply_decisions') as apply:
             save_ignore_list._apply_updates({'repo': {'approved': False}, 'other': {'term': True}}, {})
             self.assertEqual(apply.call_count, 2)
             apply.assert_any_call('repo', {'approved': False}, {})
@@ -270,7 +270,7 @@ class RegressionTests(unittest.TestCase):
 
 
     def test_rst_masks_non_prose_without_moving_source_lines(self):
-        from tokenizer.tokenize_rst import mask_rst
+        from alas_but_one.tokenizer.tokenize_rst import mask_rst
         cases = [
             ('``inlineNoise``\nretreive', {'inlinenoise'}),
             ('.. _targetNoise: https://example.test/urlNoise\n   continuedNoise\n\nretreive', {'targetnoise','urlnoise','continuednoise'}),
@@ -330,8 +330,8 @@ class RegressionTests(unittest.TestCase):
 
     def test_pipeline_default_and_audit_exports_preserve_scores(self):
         from contextlib import chdir
-        from alas import run_repo, load_config
-        from save_ignore_list import _load_jsonl, _load_csv
+        from alas_but_one.cli import run_repo, load_config
+        from alas_but_one.save_ignore_list import _load_jsonl, _load_csv
         config = load_config()
         with tempfile.TemporaryDirectory() as directory, chdir(directory):
             Path('sample.txt').write_text('MongoDB retreive ordinary')
@@ -339,8 +339,8 @@ class RegressionTests(unittest.TestCase):
             settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}}
             for output_format in ['jsonl','csv']:
                 for include_ignored in [False, True]:
-                    with patch('matchers.ignore_list_matcher.load_words', return_value={'mongodb'}):
-                        path = run_repo('test', repo, settings, config['modules'], output_format, False, Mock(available=False), False, include_ignored=include_ignored)
+                    with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value={'mongodb'}):
+                        path = run_repo('test', repo, settings, config.get('modules', {}), output_format, False, Mock(available=False), False, include_ignored=include_ignored)
                     if output_format == 'jsonl':
                         rows = [json.loads(line) for line in Path(path).read_text().splitlines()]
                         decisions = _load_jsonl(path)
@@ -368,7 +368,7 @@ class RegressionTests(unittest.TestCase):
     def test_verbose_prints_per_stage_timing_only_when_verbose(self):
         import io
         from contextlib import chdir, redirect_stdout
-        from alas import run_repo, load_config
+        from alas_but_one.cli import run_repo, load_config
         config = load_config()
         with tempfile.TemporaryDirectory() as directory, chdir(directory):
             Path('sample.txt').write_text('retreive ordinary')
@@ -377,8 +377,8 @@ class RegressionTests(unittest.TestCase):
             outputs = {}
             for verbose in [True, False]:
                 buffer = io.StringIO()
-                with redirect_stdout(buffer), patch('matchers.ignore_list_matcher.load_words', return_value=set()):
-                    run_repo('test', repo, settings, config['modules'], 'jsonl', False, Mock(available=False), verbose)
+                with redirect_stdout(buffer), patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set()):
+                    run_repo('test', repo, settings, config.get('modules', {}), 'jsonl', False, Mock(available=False), verbose)
                 outputs[verbose] = buffer.getvalue()
             for stage in ['collector','reader','tokenizer','max_occurrence_matcher','spell_checker','ignore_list_matcher']:
                 self.assertRegex(outputs[True], rf'    {stage}: \d+\.\d\ds')
@@ -399,10 +399,10 @@ class RegressionTests(unittest.TestCase):
         self.assertTrue(typo.ai_reviewed)
 
     def test_cli_forwards_ignore_flag_serial_and_parallel(self):
-        import alas
+        import alas_but_one.cli as alas
         config = {'settings':{},'modules':{},'repositories':{'a':{'name':'A'},'b':{'name':'B'}}}
         for flags, expected in [([],False), (['--include-ignored'],True), (['--include-ignored','--parallel'],True)]:
-            with patch('sys.argv', ['alas.py']+flags), patch('alas.load_config', return_value=config), patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', return_value='output') as run:
+            with patch('sys.argv', ['alas.py']+flags), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', return_value='output') as run:
                 alas.main()
                 self.assertEqual(run.call_count, 2)
                 for call in run.call_args_list:
@@ -438,7 +438,7 @@ class RegressionTests(unittest.TestCase):
 
 
     def test_inline_literals_allow_single_backticks_and_stop_at_paragraphs(self):
-        from tokenizer.tokenize_rst import mask_rst
+        from alas_but_one.tokenizer.tokenize_rst import mask_rst
         cases = [
             ('Use ``foo`codeNoise`` here.\nretreive', 2),
             ('An unclosed ``literal\n\nretreive in real prose\n\nUse ``codeNoise`` here.\nmispeled', 3),
@@ -456,7 +456,7 @@ class RegressionTests(unittest.TestCase):
         self.assertNotIn('codenoise', tokens)
 
     def test_tabs_mask_blocks_without_changing_source_offsets(self):
-        from tokenizer.tokenize_rst import mask_rst
+        from alas_but_one.tokenizer.tokenize_rst import mask_rst
         for content, line in [
             ('- Example::\n\n\tcodeNoise\n\n  retreive', 5),
             ('\t.. code-block:: python\n\n\t    codeNoise\n\n\tretreive', 5),
@@ -470,7 +470,7 @@ class RegressionTests(unittest.TestCase):
 
 
     def test_collector_and_markdown_format_defaults(self):
-        from collectors.filter_files import CollectorTask
+        from alas_but_one.collectors.filter_files import CollectorTask
         with tempfile.TemporaryDirectory() as directory:
             for name in ['a.md','b.rst','c.txt','d.png']:
                 Path(directory,name).write_text('')
@@ -485,7 +485,7 @@ class RegressionTests(unittest.TestCase):
             self.assertIn('retreive',tokens)
 
     def test_markdown_masks_code_metadata_and_destinations(self):
-        from tokenizer.tokenize_rst import mask_markdown
+        from alas_but_one.tokenizer.tokenize_rst import mask_markdown
         cases=[
             ('---\ntitle: metadataNoise\n---\nretreive', {'metadatanoise','title'},4),
             ('# Source: https://example.test\n\n---\ntitle: metadataNoise\n---\nretreive', {'metadatanoise','title'},6),
@@ -589,7 +589,7 @@ class RegressionTests(unittest.TestCase):
 
 
     def test_repo_path_resolution_absolute_tilde_relative_and_legacy(self):
-        from config import resolve_repo_dir
+        from alas_but_one.config import resolve_repo_dir
         with tempfile.TemporaryDirectory() as directory:
             self.assertEqual(resolve_repo_dir({'path': directory}, {}, '/elsewhere'), directory)
             self.assertEqual(resolve_repo_dir({'path': directory, 'source_dir': 'source'}, {}, '/x'), os.path.join(directory, 'source'))
@@ -602,31 +602,47 @@ class RegressionTests(unittest.TestCase):
                 resolve_repo_dir({'name': 'x'}, {}, directory)
 
     def test_cli_config_flag_and_env_select_config_file(self):
-        import alas
-        from config import load_config
+        import alas_but_one.cli as alas
+        from alas_but_one.config import load_config
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, 'custom.json')
             Path(path).write_text(json.dumps({'settings': {}, 'modules': {}, 'repositories': {}}))
             config = load_config(path)
             self.assertEqual(config['config_dir'], directory)
             for argv, env in [(['alas.py', '--config', path], {}), (['alas.py'], {'ABO_CONFIG': path})]:
-                with patch('sys.argv', argv), patch.dict(os.environ, env, clear=True), patch('alas.load_config', return_value=config) as load, patch('alas.MLPredictor', return_value=Mock(available=False)):
+                with patch('sys.argv', argv), patch.dict(os.environ, env, clear=True), patch('alas_but_one.cli.load_config', return_value=config) as load, patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)):
                     with self.assertRaises(SystemExit):
                         alas.main()
                     load.assert_called_once_with(path)
 
-class ConfigErrorMessageTests(unittest.TestCase):
-    MISSING = 'Config file {} not found. Create it (see Setup in the README), or set ABO_CONFIG to the path of an existing one (alas.py also accepts --config PATH).'
+class TaskFactoryTests(unittest.TestCase):
 
-    def _cli(self, *args, script='alas.py', cwd=None, env_extra=None):
+    def test_legacy_module_path_resolves_and_custom_import_errors_are_not_masked(self):
+        from alas_but_one.tasks.factory import TaskFactory
+        from alas_but_one.collectors.filter_files import CollectorTask
+        legacy = {'collector': {'path': 'collectors.filter_files', 'className': 'CollectorTask'}}
+        self.assertIsInstance(TaskFactory.create_task('collector', {}, {'name': 'x'}, legacy), CollectorTask)
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'mytask.py').write_text('import notinstalled_dep\n')
+            sys.path.insert(0, directory)
+            try:
+                custom = {'collector': {'path': 'mytask', 'className': 'X'}}
+                with self.assertRaisesRegex(ModuleNotFoundError, 'notinstalled_dep'):
+                    TaskFactory.create_task('collector', {}, {'name': 'x'}, custom)
+            finally:
+                sys.path.remove(directory)
+                sys.modules.pop('mytask', None)
+
+
+class ConfigErrorMessageTests(unittest.TestCase):
+    MISSING = 'Config file {} not found. Create it (see Setup in the README), or set ABO_CONFIG to the path of an existing one (alas also accepts --config PATH).'
+
+    def _cli(self, *args, script='alas_but_one.cli', cwd=None, env_extra=None):
         import subprocess
         root = str(Path(__file__).resolve().parent.parent)
         env = {k: v for k, v in os.environ.items() if k != 'ABO_CONFIG'}
         env.update(env_extra or {})
-        if cwd:
-            script = os.path.join(root, script)
-            env['PYTHONPATH'] = root
-        return subprocess.run([sys.executable, script, *args], cwd=cwd or root, env=env, capture_output=True, text=True)
+        return subprocess.run([sys.executable, '-m', script, *args], cwd=cwd or root, env=env, capture_output=True, text=True)
 
     def test_invalid_directory_names_repo_directory_and_config(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -651,7 +667,7 @@ class ConfigErrorMessageTests(unittest.TestCase):
             directory = os.path.realpath(directory)
             Path(directory, 'out.jsonl').write_text('')
             cfg = os.path.join(directory, 'absent.json')
-            result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory, env_extra={'ABO_CONFIG': cfg})
+            result = self._cli('out.jsonl', script='alas_but_one.save_ignore_list', cwd=directory, env_extra={'ABO_CONFIG': cfg})
             self.assertEqual(result.returncode, 1)
             self.assertEqual(result.stderr.strip(), self.MISSING.format(cfg))
 
@@ -666,7 +682,7 @@ class ConfigErrorMessageTests(unittest.TestCase):
     def test_save_ignore_list_missing_input_exits_with_message(self):
         with tempfile.TemporaryDirectory() as directory:
             directory = os.path.realpath(directory)
-            result = self._cli('nope.jsonl', script='save_ignore_list.py', cwd=directory)
+            result = self._cli('nope.jsonl', script='alas_but_one.save_ignore_list', cwd=directory)
             self.assertEqual(result.returncode, 1)
             self.assertEqual(result.stderr.strip(), f'Input file {os.path.join(directory, "nope.jsonl")} not found.')
 
@@ -679,7 +695,7 @@ class ConfigErrorMessageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             directory = os.path.realpath(directory)
             Path(directory, 'out.jsonl').write_text('{"repo": "r", "word": "a", "ignore": true}\n\n{oops\n')
-            result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory)
+            result = self._cli('out.jsonl', script='alas_but_one.save_ignore_list', cwd=directory)
             self._assert_clean_failure(result, f'Input file {os.path.join(directory, "out.jsonl")} line 3 is not valid JSON.')
 
     def test_save_ignore_list_non_text_word_is_a_clean_error(self):
@@ -691,11 +707,11 @@ class ConfigErrorMessageTests(unittest.TestCase):
         for name, text, line in cases:
             with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
                 Path(directory, name).write_text(text)
-                result = self._cli(name, script='save_ignore_list.py', cwd=directory)
+                result = self._cli(name, script='alas_but_one.save_ignore_list', cwd=directory)
                 self._assert_clean_failure(result, f'Input file {os.path.join(os.path.realpath(directory), name)} line {line}: word must be text.')
 
     def test_save_ignore_list_reads_bom_input(self):
-        from save_ignore_list import _load_csv, _load_jsonl
+        from alas_but_one.save_ignore_list import _load_csv, _load_jsonl
         with tempfile.TemporaryDirectory() as directory:
             csv_path = Path(directory, 'excel.csv')
             csv_path.write_bytes('\ufeffrepo,word,ignore\nr,Recieve,Y\n'.encode('utf-8'))
@@ -708,7 +724,7 @@ class ConfigErrorMessageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             directory = os.path.realpath(directory)
             Path(directory, 'out.jsonl').write_text('{"repo": "r", "word": "a", "ignore": true}\n[1]\n')
-            result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory)
+            result = self._cli('out.jsonl', script='alas_but_one.save_ignore_list', cwd=directory)
             self._assert_clean_failure(result, f'Input file {os.path.join(directory, "out.jsonl")} line 2 is not a JSON object.')
 
     def test_save_ignore_list_non_utf8_input_is_a_clean_error(self):
@@ -716,14 +732,14 @@ class ConfigErrorMessageTests(unittest.TestCase):
             directory = os.path.realpath(directory)
             for name in ('bin.jsonl', 'bin.csv'):
                 Path(directory, name).write_bytes(b'\xff\xfe\x00\x80\x81')
-                result = self._cli(name, script='save_ignore_list.py', cwd=directory)
+                result = self._cli(name, script='alas_but_one.save_ignore_list', cwd=directory)
                 self._assert_clean_failure(result, f'Input file {os.path.join(directory, name)} is not UTF-8 text.')
 
     def test_save_ignore_list_input_directory_is_a_clean_error(self):
         with tempfile.TemporaryDirectory() as directory:
             directory = os.path.realpath(directory)
             os.mkdir(os.path.join(directory, 'd.jsonl'))
-            result = self._cli('d.jsonl', script='save_ignore_list.py', cwd=directory)
+            result = self._cli('d.jsonl', script='alas_but_one.save_ignore_list', cwd=directory)
             self._assert_clean_failure(result, f'Input file {os.path.join(directory, "d.jsonl")} cannot be read: Is a directory.')
 
     def test_config_path_directory_is_a_clean_error(self):
@@ -733,7 +749,7 @@ class ConfigErrorMessageTests(unittest.TestCase):
             self._assert_clean_failure(result, f'Config file {directory} cannot be read: Is a directory.')
 
     def test_ignore_file_malformed_json_is_a_clean_error(self):
-        from ignore_list_store import IgnoreListError, _read_file
+        from alas_but_one.ignore_list_store import IgnoreListError, _read_file
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, 'i.json')
             Path(path).write_text('{')
@@ -743,7 +759,7 @@ class ConfigErrorMessageTests(unittest.TestCase):
                 _read_file(directory)
 
     def test_malformed_mongo_uri_is_a_clean_error_without_credentials(self):
-        from ignore_list_store import IgnoreListError, _mongo
+        from alas_but_one.ignore_list_store import IgnoreListError, _mongo
         with self.assertRaises(IgnoreListError) as caught:
             _mongo('mongodb://SECRETUSER:SECRETPW@host:12x/db', lambda client: None)
         self.assertIn('MongoDB URI is invalid: Port contains non-digit characters', str(caught.exception))
@@ -753,15 +769,15 @@ class ConfigErrorMessageTests(unittest.TestCase):
 class FailAboveTests(unittest.TestCase):
     def _run(self, directory, *flags, ignored=()):
         from contextlib import chdir
-        import alas
+        import alas_but_one.cli as alas
         base = alas.load_config()
-        config = {'settings': {**base['settings'], 'ai': {'enabled': False}}, 'modules': base['modules'], 'repositories': {
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}}, 'modules': base.get('modules', {}), 'repositories': {
             'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
         out, err = io.StringIO(), io.StringIO()
         code = 0
         with chdir(directory), redirect_stdout(out), redirect_stderr(err), patch('sys.argv', ['alas.py', *flags]), \
-                patch('alas.load_config', return_value=config), patch('alas.MLPredictor', return_value=Mock(available=False)), \
-                patch('matchers.ignore_list_matcher.load_words', return_value=set(ignored)):
+                patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
+                patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set(ignored)):
             try:
                 alas.main()
             except SystemExit as e:
@@ -806,37 +822,37 @@ class FailAboveTests(unittest.TestCase):
             self.assertEqual(self._run(directory, '--fail-above', '1.5')[0], 2)
 
     def test_parallel_aggregates_across_repos(self):
-        import alas
+        import alas_but_one.cli as alas
         config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
         def fake(name, repo_config, *a, hits=None, fail_above=None, **k):
             if repo_config['name'] == 'B':
                 hits.append(('B', Token('x', 'B', [TokenLocation('f', 1)], confidence=0.9)))
             return 'out'
         for flags in [(), ('--parallel',)]:
-            with patch('sys.argv', ['alas.py', '--fail-above', '0.8', *flags]), patch('alas.load_config', return_value=config), \
-                    patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+            with patch('sys.argv', ['alas.py', '--fail-above', '0.8', *flags]), patch('alas_but_one.cli.load_config', return_value=config), \
+                    patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                     redirect_stdout(io.StringIO()):
                 with self.assertRaises(SystemExit) as raised:
                     alas.main()
             self.assertEqual(raised.exception.code, 1)
 
     def test_parallel_repo_failure_fails_the_gate_quietly(self):
-        import alas
+        import alas_but_one.cli as alas
         config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
         def fake(name, repo_config, *a, **k):
             if repo_config['name'] == 'B':
                 raise ValueError('Invalid directory: nope')
             return 'out'
         out, err = io.StringIO(), io.StringIO()
-        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet', '--parallel']), patch('alas.load_config', return_value=config), \
-                patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet', '--parallel']), patch('alas_but_one.cli.load_config', return_value=config), \
+                patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                 redirect_stdout(out), redirect_stderr(err):
             with self.assertRaises(SystemExit) as raised:
                 alas.main()
         self.assertEqual((raised.exception.code, out.getvalue()), (1, ''))
         self.assertIn('B: FAILED', err.getvalue())
     def test_failed_repo_does_not_stop_others_and_exits_1(self):
-        import alas
+        import alas_but_one.cli as alas
         config = {'settings': {}, 'modules': {}, 'repositories': {
             'a': {'name': 'A'}, 'b': {'name': 'B'}, 'c': {'name': 'C'}}}
         for flags in [(), ('--parallel',)]:
@@ -847,9 +863,9 @@ class FailAboveTests(unittest.TestCase):
                     raise ValueError('Invalid directory: nope')
                 return 'out'
             out, err = io.StringIO(), io.StringIO()
-            with patch('sys.argv', ['alas.py', *flags]), patch('alas.load_config', return_value=config), \
-                    patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
-                    redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas', 'DEBUG'):
+            with patch('sys.argv', ['alas.py', *flags]), patch('alas_but_one.cli.load_config', return_value=config), \
+                    patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
+                    redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas_but_one.cli', 'DEBUG'):
                 with self.assertRaises(SystemExit) as raised:
                     alas.main()
             self.assertEqual((raised.exception.code, sorted(scanned)), (1, ['A', 'B', 'C']), flags)
@@ -858,7 +874,7 @@ class FailAboveTests(unittest.TestCase):
             self.assertIn('C -> out', out.getvalue())
 
     def test_quiet_serial_prints_hits_from_repos_that_finished_despite_failure(self):
-        import alas
+        import alas_but_one.cli as alas
         config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
         def fake(name, repo_config, *a, hits=None, **k):
             if repo_config['name'] == 'A':
@@ -866,9 +882,9 @@ class FailAboveTests(unittest.TestCase):
                 return 'out'
             raise ValueError('boom')
         out, err = io.StringIO(), io.StringIO()
-        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet']), patch('alas.load_config', return_value=config), \
-                patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
-                redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas', 'DEBUG'):
+        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet']), patch('alas_but_one.cli.load_config', return_value=config), \
+                patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
+                redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas_but_one.cli', 'DEBUG'):
             with self.assertRaises(SystemExit) as raised:
                 alas.main()
         self.assertEqual(raised.exception.code, 1)
@@ -882,14 +898,14 @@ class LogFileTests(unittest.TestCase):
 
     def _main(self, directory, *flags, settings=None):
         from contextlib import chdir
-        import alas
+        import alas_but_one.cli as alas
         base = alas.load_config()
-        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, **(settings or {})}, 'modules': base['modules'], 'repositories': {
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, **(settings or {})}, 'modules': base.get('modules', {}), 'repositories': {
             'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
         buffer = io.StringIO()
         with chdir(directory), redirect_stdout(buffer), patch('sys.argv', ['alas.py', *flags]), \
-                patch('alas.load_config', return_value=config), patch('alas.MLPredictor', return_value=Mock(available=False)), \
-                patch('matchers.ignore_list_matcher.load_words', return_value=set()):
+                patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
+                patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set()):
             alas.main()
         self.assertEqual(logging.getLogger().handlers, self._handlers)
         return buffer.getvalue()
@@ -909,7 +925,7 @@ class LogFileTests(unittest.TestCase):
     def test_settings_log_file_is_config_relative_and_cli_wins(self):
         with tempfile.TemporaryDirectory() as directory:
             Path(directory, 'sample.txt').write_text('retreive')
-            from config import load_config
+            from alas_but_one.config import load_config
             cfg = os.path.join(directory, 'c.json')
             Path(cfg).write_text(json.dumps({'settings': {'log_file': 'rel.log'}}))
             self.assertEqual(load_config(cfg)['settings']['log_file'], os.path.join(directory, 'rel.log'))
@@ -919,7 +935,7 @@ class LogFileTests(unittest.TestCase):
             self.assertFalse(os.path.exists(os.path.join(directory, 's.log')))
 
     def test_ai_batch_raw_response_and_failure_are_logged(self):
-        import alas
+        import alas_but_one.cli as alas
         with tempfile.TemporaryDirectory() as directory:
             log = os.path.join(directory, 'ai.log')
             handler = alas.setup_logging(log)
@@ -937,7 +953,7 @@ class LogFileTests(unittest.TestCase):
             self.assertIn('AI batch 1 failed', text)
 
     def test_ai_raw_response_line_carries_batch_index(self):
-        import alas
+        import alas_but_one.cli as alas
         with tempfile.TemporaryDirectory() as directory:
             log = os.path.join(directory, 'ai.log')
             handler = alas.setup_logging(log)
@@ -960,7 +976,7 @@ class LogFileTests(unittest.TestCase):
             Path(directory, 'sample.txt').write_text('retreive')
             log = os.path.join(directory, 'run.log')
             self._main(directory, '--log', log)
-            self.assertRegex(Path(log).read_text(), r'DEBUG \[MainThread\] alas: test : start')
+            self.assertRegex(Path(log).read_text(), r'DEBUG \[MainThread\] alas_but_one.cli: test : start')
 
 
 class AISendContextTests(unittest.TestCase):
@@ -1049,7 +1065,7 @@ class AIStructuredResponseTests(unittest.TestCase):
 
 class FileIgnoreListTests(unittest.TestCase):
     def test_file_backend_round_trip(self):
-        from ignore_list_store import load_words, apply_decisions
+        from alas_but_one.ignore_list_store import load_words, apply_decisions
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, 'sub', 'ignore.json')
             settings = {'ignore_list': {'file': path}}
@@ -1067,7 +1083,7 @@ class FileIgnoreListTests(unittest.TestCase):
             self.assertEqual(os.listdir(os.path.dirname(path)), ['ignore.json'])
 
     def test_malformed_ignore_file_names_the_file(self):
-        from ignore_list_store import IgnoreListError, load_words, apply_decisions
+        from alas_but_one.ignore_list_store import IgnoreListError, load_words, apply_decisions
         for label, content in [('list top level', '["a"]'), ('string repo value', '{"a": "word"}')]:
             with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
                 path = os.path.join(directory, 'ignore.json')
@@ -1079,20 +1095,20 @@ class FileIgnoreListTests(unittest.TestCase):
                     self.assertIn(path, str(caught.exception))
 
     def test_save_ignore_list_missing_pymongo_exits_without_traceback(self):
-        import save_ignore_list
+        import alas_but_one.save_ignore_list as save_ignore_list
         from contextlib import chdir
         with tempfile.TemporaryDirectory() as directory, chdir(directory):
             config = os.path.join(directory, 'config.json')
             Path(config).write_text(json.dumps({'settings': {'ignore_list': {'database': 'd', 'collection': 'c'}}, 'repos': []}))
             reviewed = os.path.join(directory, 'out.jsonl')
             Path(reviewed).write_text(json.dumps({'repo': 'r', 'word': 'w', 'ignore': True}) + '\n')
-            with patch('sys.argv', ['save_ignore_list.py', reviewed]), patch.dict(os.environ, {'ABO_CONFIG': config}, clear=True), \
-                    patch('ignore_list_store.MongoClient', None), self.assertRaises(SystemExit) as caught:
+            with patch('sys.argv', ['alas_but_one.save_ignore_list.py', reviewed]), patch.dict(os.environ, {'ABO_CONFIG': config}, clear=True), \
+                    patch('alas_but_one.ignore_list_store.MongoClient', None), self.assertRaises(SystemExit) as caught:
                 save_ignore_list.main()
             self.assertIn('pymongo is required', str(caught.exception.code))
 
     def test_relative_file_resolves_against_config_dir(self):
-        from config import load_config
+        from alas_but_one.config import load_config
         from contextlib import chdir
         with tempfile.TemporaryDirectory() as directory:
             config_path = os.path.join(directory, 'config.json')
@@ -1141,19 +1157,18 @@ class MongoCredentialLeakTests(unittest.TestCase):
             self.assertNotIn(self.URI, text)
 
     def _config(self, directory, uri_in_config):
-        modules = json.loads(Path(__file__).resolve().parent.parent.joinpath('config.json').read_text())['modules']
         Path(directory, 'docs').mkdir()
         Path(directory, 'docs', 'sample.txt').write_text('retreive')
         settings = {'maxOccurrences': 1, 'ignore_list': {'database': 'db', 'collection': 'words'}}
         if uri_in_config:
             settings['MONGODB_URI'] = self.URI
         path = os.path.join(directory, 'config.json')
-        Path(path).write_text(json.dumps({'settings': settings, 'modules': modules, 'repositories': {
+        Path(path).write_text(json.dumps({'settings': settings, 'repositories': {
             'r': {'name': 'R', 'path': os.path.join(directory, 'docs')}}}))
         return path
 
     def test_alas_run_failures_never_print_uri_or_credentials(self):
-        import alas
+        import alas_but_one.cli as alas
         from contextlib import chdir
         for uri_in_config in [True, False]:
             for label, params, error in self._failures():
@@ -1163,8 +1178,8 @@ class MongoCredentialLeakTests(unittest.TestCase):
                     env = {} if uri_in_config else {'ABO_MONGO_URI': self.URI}
                     out, err = io.StringIO(), io.StringIO()
                     with patch('sys.argv', ['alas.py', '--config', config, '--log', log]), patch.dict(os.environ, env, clear=True), \
-                            patch('alas.MLPredictor', return_value=Mock(available=False)), \
-                            patch('ignore_list_store.MongoClient', self._client(params, error)), \
+                            patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
+                            patch('alas_but_one.ignore_list_store.MongoClient', self._client(params, error)), \
                             redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as caught:
                         alas.main()
                     self.assertNotEqual(caught.exception.code, 0)
@@ -1172,7 +1187,7 @@ class MongoCredentialLeakTests(unittest.TestCase):
                     self._assert_clean(out.getvalue(), err.getvalue(), str(caught.exception.code), Path(log).read_text())
 
     def test_save_ignore_list_failures_never_print_uri_or_credentials(self):
-        import save_ignore_list
+        import alas_but_one.save_ignore_list as save_ignore_list
         from contextlib import chdir
         for label, params, error in self._failures():
             with self.subTest(label=label), tempfile.TemporaryDirectory() as directory, chdir(directory):
@@ -1180,15 +1195,15 @@ class MongoCredentialLeakTests(unittest.TestCase):
                 reviewed = os.path.join(directory, 'out.jsonl')
                 Path(reviewed).write_text(json.dumps({'repo': 'r', 'word': 'retreive', 'ignore': True}) + '\n')
                 out, err = io.StringIO(), io.StringIO()
-                with patch('sys.argv', ['save_ignore_list.py', reviewed]), patch.dict(os.environ, {'ABO_CONFIG': config, 'ABO_MONGO_URI': self.URI}, clear=True), \
-                        patch('ignore_list_store.MongoClient', self._client(params, error)), \
+                with patch('sys.argv', ['alas_but_one.save_ignore_list.py', reviewed]), patch.dict(os.environ, {'ABO_CONFIG': config, 'ABO_MONGO_URI': self.URI}, clear=True), \
+                        patch('alas_but_one.ignore_list_store.MongoClient', self._client(params, error)), \
                         redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as caught:
                     save_ignore_list.main()
                 self.assertIn('MongoDB error', str(caught.exception.code))
                 self._assert_clean(out.getvalue(), err.getvalue(), str(caught.exception.code))
 
     def test_invalid_config_errors_never_print_uri_or_credentials(self):
-        from ignore_list_store import resolve_ignore_list_settings
+        from alas_but_one.ignore_list_store import resolve_ignore_list_settings
         settings = {'MONGODB_URI': self.URI, 'ignore_list': {'database': '', 'collection': 'words'}}
         with patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError) as caught:
             resolve_ignore_list_settings(settings)
@@ -1200,14 +1215,14 @@ class MongoCredentialLeakTests(unittest.TestCase):
 
     def test_redaction_covers_encoded_credentials_and_other_uris(self):
         from pymongo.errors import OperationFailure
-        from ignore_list_store import IgnoreListError, load_words
+        from alas_but_one.ignore_list_store import IgnoreListError, load_words
         uri = 'mongodb+srv://us%40er:p%40ss%3Aw%2Frd@cluster.example.net/?retryWrites=true'
         message = 'auth us@er p@ss:w/rd failed; seed mongodb://OTHERUSER:OTHERPW@replica.example.net:27017'
         client = Mock()
         client.__getitem__ = Mock(side_effect=OperationFailure(message))
         settings = {'ignore_list': {'database': 'db', 'collection': 'words'}}
         with patch.dict(os.environ, {'ABO_MONGO_URI': uri}, clear=True), \
-                patch('ignore_list_store.MongoClient', Mock(return_value=client)), \
+                patch('alas_but_one.ignore_list_store.MongoClient', Mock(return_value=client)), \
                 self.assertRaises(IgnoreListError) as caught:
             load_words('repo', settings)
         text = str(caught.exception)

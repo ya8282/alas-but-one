@@ -1,7 +1,6 @@
 {
   "settings": {
     "maxOccurrences": 1,
-    "confidence_threshold": 0.3,
 
     "MONGODB_URI": "mongodb://localhost:27017",
     "ignore_list": {
@@ -30,41 +29,6 @@
       "text_format": "rst",
       "path": "~/dev/docs-golang",
       "source_dir": "source"
-    }
-  },
-
-  "modules": {
-    "collector": {
-      "path": "collectors.filter_files",
-      "className": "CollectorTask"
-    },
-    "reader": {
-      "path": "collectors.read_content",
-      "className": "ReaderTask"
-    },
-    "tokenizer": {
-      "path": "tokenizer.tokenize_rst",
-      "className": "TokenizerTask"
-    },
-    "ignore_list_matcher": {
-      "path": "matchers.ignore_list_matcher",
-      "className": "IgnoreListTask"
-    },
-    "max_occurrence_matcher": {
-      "path": "matchers.max_occurrence_matcher",
-      "className": "MaxOccurrenceMatcherTask"
-    },
-    "spell_checker": {
-      "path": "matchers.spell_checker",
-      "className": "SpellCheckerTask"
-    },
-    "formatter": {
-      "path": "formatters.csv_formatter",
-      "className": "CsvFormatterTask"
-    },
-    "jsonl_formatter": {
-      "path": "formatters.jsonl_formatter",
-      "className": "JsonlFormatterTask"
     }
   }
 }

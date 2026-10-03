@@ -3,8 +3,8 @@ Persist ignore-list changes from a reviewed CSV or JSONL output file to MongoDB 
 settings.ignore_list.file JSON file.
 
 Usage:
-  python save_ignore_list.py output.jsonl
-  python save_ignore_list.py output.csv
+  alas-save-ignore output.jsonl
+  alas-save-ignore output.csv
 
 For JSONL: set "ignore": true/false on each record.
 For CSV:   set the 'ignore' column to 'Y'/'N'.
@@ -18,8 +18,8 @@ import json
 import os
 import re
 import sys
-from config import ConfigError, default_config_path, load_config
-from ignore_list_store import apply_decisions
+from alas_but_one.config import ConfigError, default_config_path, load_config
+from alas_but_one.ignore_list_store import apply_decisions
 
 
 def _clean_word(word, path: str, number: int) -> str:
@@ -80,7 +80,7 @@ def _apply_updates(update_dict: dict, settings: dict) -> None:
 
 def main():
     if len(sys.argv) < 2:
-        sys.exit("Usage: python save_ignore_list.py <output.jsonl|output.csv>")
+        sys.exit("Usage: alas-save-ignore <output.jsonl|output.csv>")
 
     input_file = sys.argv[1]
 

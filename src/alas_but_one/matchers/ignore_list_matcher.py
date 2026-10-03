@@ -1,8 +1,8 @@
 from typing import Dict
-from tasks.base_task import BaseTask
-from models.token import Token
-from ignore_list_store import load_words
-from matchers.spell_checker import MIN_COMPOUND_PART
+from alas_but_one.tasks.base_task import BaseTask
+from alas_but_one.models.token import Token
+from alas_but_one.ignore_list_store import load_words
+from alas_but_one.matchers.spell_checker import MIN_COMPOUND_PART
 from spellchecker import SpellChecker
 
 class IgnoreListTask(BaseTask):
