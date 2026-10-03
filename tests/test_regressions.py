@@ -352,7 +352,7 @@ class RegressionTests(unittest.TestCase):
         typo = Token('retreive', 'test', [], confidence=0.4)
         reviewer = AIReviewer({'ai':{'enabled':True}})
         client = Mock()
-        client.messages.create.return_value.content = [Mock(text='[{"word":"retreive","confidence":0.9}]')]
+        client.messages.create.return_value.content = [Mock(type='text', text='{"results":[{"word":"retreive","is_typo":true,"confidence":0.9,"suggestion":null,"comment":"c"}]}')]
         with patch.object(reviewer, '_get_client', return_value=client):
             reviewer.run({'mongodb':approved, 'retreive':typo}, {})
         user_message = client.messages.create.call_args.kwargs['messages'][0]['content']
@@ -629,7 +629,7 @@ class LogFileTests(unittest.TestCase):
                 t = Token('teh', 'test', [TokenLocation('a.md', 1)], confidence=0.5)
                 reviewer = AIReviewer({'ai': {'enabled': True}})
                 client = Mock()
-                client.messages.create.return_value.content = [Mock(text='RAW-NOT-JSON-123')]
+                client.messages.create.return_value.content = [Mock(type='text', text='RAW-NOT-JSON-123')]
                 with patch.object(reviewer, '_get_client', return_value=client), redirect_stdout(io.StringIO()):
                     reviewer.run({'teh': t}, {'a.md': 'teh'})
             finally:
@@ -648,7 +648,7 @@ class AISendContextTests(unittest.TestCase):
             ai_cfg['send_context'] = send_context
         reviewer = AIReviewer({'ai': ai_cfg})
         client = Mock()
-        client.messages.create.return_value.content = [Mock(text='[]')]
+        client.messages.create.return_value.content = [Mock(type='text', text='{"results": []}')]
         with patch.object(reviewer, '_get_client', return_value=client):
             reviewer.run({'teh': t}, content)
         return client.messages.create.call_args.kwargs['messages'][0]['content']
@@ -661,6 +661,66 @@ class AISendContextTests(unittest.TestCase):
         self.assertIn('teh', msg)
         for leaked in ('SECRET', 'first line', 'a.md', '"context"'):
             self.assertNotIn(leaked, msg)
+
+
+class AIStructuredResponseTests(unittest.TestCase):
+    @staticmethod
+    def _item(word, confidence=0.9, suggestion='the'):
+        return {'word': word, 'is_typo': True, 'confidence': confidence, 'suggestion': suggestion, 'comment': 'c'}
+
+    def _run(self, results=None, stop_reason='end_turn'):
+        tokens = {w: Token(w, 'test', [TokenLocation('a.md', 1)], confidence=0.5) for w in ('teh', 'wrld')}
+        reviewer = AIReviewer({'ai': {'enabled': True}})
+        client = Mock()
+        response = client.messages.create.return_value
+        response.stop_reason = stop_reason
+        response.content = [Mock(type='text', text=json.dumps({'results': results or []}))]
+        with patch.object(reviewer, '_get_client', return_value=client), redirect_stdout(io.StringIO()) as out:
+            reviewer.run(tokens, {'a.md': 'teh wrld'})
+        return tokens, client, out.getvalue()
+
+    def _assert_untouched(self, tokens, out):
+        for t in tokens.values():
+            self.assertFalse(t.ai_reviewed)
+            self.assertEqual(t.confidence, 0.5)
+            self.assertIsNone(t.ai_comment)
+        self.assertIn('batch 1 failed', out)
+
+    def test_request_uses_json_schema_output(self):
+        _, client, _ = self._run()
+        fmt = client.messages.create.call_args.kwargs['output_config']['format']
+        self.assertEqual(fmt['type'], 'json_schema')
+        self.assertFalse(fmt['schema']['additionalProperties'])
+        self.assertEqual(fmt['schema']['required'], ['results'])
+
+    def test_matching_response_is_applied(self):
+        tokens, _, _ = self._run([self._item('wrld', 0.8, None), self._item('teh', 0.95)])
+        self.assertTrue(all(t.ai_reviewed for t in tokens.values()))
+        self.assertEqual(tokens['teh'].confidence, 0.95)
+        self.assertEqual(tokens['teh'].suggestion, 'the')
+        self.assertEqual(tokens['wrld'].confidence, 0.8)
+        self.assertIsNone(tokens['wrld'].suggestion)
+
+    def test_missing_word_fails_whole_batch(self):
+        tokens, _, out = self._run([self._item('teh')])
+        self._assert_untouched(tokens, out)
+
+    def test_extra_word_fails_whole_batch(self):
+        tokens, _, out = self._run([self._item('teh'), self._item('wrld'), self._item('other')])
+        self._assert_untouched(tokens, out)
+
+    def test_duplicate_word_fails_whole_batch(self):
+        tokens, _, out = self._run([self._item('teh'), self._item('teh'), self._item('wrld')])
+        self._assert_untouched(tokens, out)
+
+    def test_invalid_value_leaves_earlier_tokens_untouched(self):
+        tokens, _, out = self._run([self._item('teh'), self._item('wrld', confidence='high')])
+        self._assert_untouched(tokens, out)
+
+    def test_refusal_and_truncation_fail_batch(self):
+        for reason in ('refusal', 'max_tokens'):
+            tokens, _, out = self._run([self._item('teh'), self._item('wrld')], stop_reason=reason)
+            self._assert_untouched(tokens, out)
 
 
 class FileIgnoreListTests(unittest.TestCase):
