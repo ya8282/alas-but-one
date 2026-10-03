@@ -902,6 +902,31 @@ class FileIgnoreListTests(unittest.TestCase):
             self.assertEqual(load_words('b', settings), {'other'})
             self.assertEqual(os.listdir(os.path.dirname(path)), ['ignore.json'])
 
+    def test_malformed_ignore_file_names_the_file(self):
+        from ignore_list_store import IgnoreListError, load_words, apply_decisions
+        for label, content in [('list top level', '["a"]'), ('string repo value', '{"a": "word"}')]:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
+                path = os.path.join(directory, 'ignore.json')
+                Path(path).write_text(content)
+                settings = {'ignore_list': {'file': path}}
+                for operation in [lambda: load_words('a', settings), lambda: apply_decisions('a', {'w': True}, settings)]:
+                    with self.assertRaises(IgnoreListError) as caught:
+                        operation()
+                    self.assertIn(path, str(caught.exception))
+
+    def test_save_ignore_list_missing_pymongo_exits_without_traceback(self):
+        import save_ignore_list
+        from contextlib import chdir
+        with tempfile.TemporaryDirectory() as directory, chdir(directory):
+            config = os.path.join(directory, 'config.json')
+            Path(config).write_text(json.dumps({'settings': {'ignore_list': {'database': 'd', 'collection': 'c'}}, 'repos': []}))
+            reviewed = os.path.join(directory, 'out.jsonl')
+            Path(reviewed).write_text(json.dumps({'repo': 'r', 'word': 'w', 'ignore': True}) + '\n')
+            with patch('sys.argv', ['save_ignore_list.py', reviewed]), patch.dict(os.environ, {'ABO_CONFIG': config}, clear=True), \
+                    patch('ignore_list_store.MongoClient', None), self.assertRaises(SystemExit) as caught:
+                save_ignore_list.main()
+            self.assertIn('pymongo is required', str(caught.exception.code))
+
     def test_relative_file_resolves_against_config_dir(self):
         from config import load_config
         from contextlib import chdir
