@@ -25,7 +25,7 @@ from ignore_list_store import apply_decisions
 def _load_csv(path: str) -> dict:
     """Returns {repo_name: {word: ignore_bool}}"""
     update_dict = collections.defaultdict(dict)
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             ignore_val = row.get('ignore', '')
@@ -43,7 +43,7 @@ def _load_csv(path: str) -> dict:
 def _load_jsonl(path: str) -> dict:
     """Returns {repo_name: {word: ignore_bool}}"""
     update_dict = collections.defaultdict(dict)
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         for number, line in enumerate(f, 1):
             line = line.strip()
             if not line:
@@ -52,6 +52,8 @@ def _load_jsonl(path: str) -> dict:
                 record = json.loads(line)
             except json.JSONDecodeError:
                 raise ValueError(f"Input file {os.path.abspath(path)} line {number} is not valid JSON.") from None
+            if not isinstance(record, dict):
+                raise ValueError(f"Input file {os.path.abspath(path)} line {number} is not a JSON object.")
             word = record.get('word', '').lower()
             repo = record.get('repo', '')
             ignore = record.get('ignore')
@@ -87,6 +89,8 @@ def main():
         sys.exit(f"Input file {os.path.abspath(input_file)} not found.")
     except OSError as error:
         sys.exit(f"Input file {os.path.abspath(input_file)} cannot be read: {error.strerror}.")
+    except UnicodeDecodeError:
+        sys.exit(f"Input file {os.path.abspath(input_file)} is not UTF-8 text.")
     except ValueError as error:  # bad JSONL line
         sys.exit(str(error))
 

@@ -682,6 +682,21 @@ class ConfigErrorMessageTests(unittest.TestCase):
             result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory)
             self._assert_clean_failure(result, f'Input file {os.path.join(directory, "out.jsonl")} line 3 is not valid JSON.')
 
+    def test_save_ignore_list_non_object_jsonl_line_is_a_clean_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            Path(directory, 'out.jsonl').write_text('{"repo": "r", "word": "a", "ignore": true}\n[1]\n')
+            result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory)
+            self._assert_clean_failure(result, f'Input file {os.path.join(directory, "out.jsonl")} line 2 is not a JSON object.')
+
+    def test_save_ignore_list_non_utf8_input_is_a_clean_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            for name in ('bin.jsonl', 'bin.csv'):
+                Path(directory, name).write_bytes(b'\xff\xfe\x00\x80\x81')
+                result = self._cli(name, script='save_ignore_list.py', cwd=directory)
+                self._assert_clean_failure(result, f'Input file {os.path.join(directory, name)} is not UTF-8 text.')
+
     def test_save_ignore_list_input_directory_is_a_clean_error(self):
         with tempfile.TemporaryDirectory() as directory:
             directory = os.path.realpath(directory)
