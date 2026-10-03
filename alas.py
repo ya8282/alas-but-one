@@ -20,7 +20,7 @@ import io
 import logging
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, Optional
 
 from config import ConfigError, check_repo_dir, default_config_path, load_config, resolve_repo_dir
@@ -36,7 +36,7 @@ def setup_logging(path: str) -> logging.Handler:
     """Sends DEBUG logs to `path`; caller removes the returned handler."""
     handler = logging.FileHandler(path, encoding='utf-8')
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s'))
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s [%(threadName)s] %(name)s: %(message)s'))
     root = logging.getLogger()
     root.addHandler(handler)
     handler._prev_level = root.level
@@ -146,7 +146,7 @@ def _hit_line(repo: str, token) -> str:
 
 
 def cmd_run(args, config: Dict) -> int:
-    """Scans repos; returns the exit code (1 when --fail-above is met)."""
+    """Scans repos; returns the exit code (1 when --fail-above is met or any repo failed)."""
     if not args.quiet:
         return _scan(args, config)[0]
     with contextlib.redirect_stdout(io.StringIO()):
@@ -178,39 +178,41 @@ def _scan(args, config: Dict):
     fail_above = args.fail_above
 
     def process(repo_name, repo_config):
-        print(f"Processing: {repo_config['name']}")
-        output = run_repo(
-            repo_name, repo_config, settings, modules,
-            output_format=args.format,
-            ai_enabled=args.ai,
-            predictor=predictor,
-            verbose=args.verbose,
-            include_ignored=args.include_ignored,
-            config_dir=config.get('config_dir', ''),
-            config_path=config.get('config_path', ''),
-            **({'hits': hits, 'fail_above': fail_above} if fail_above is not None else {}),
-        )
-        return repo_name, output
+        name = repo_config['name']
+        logging.getLogger(__name__).debug("%s : start", name)
+        print(f"Processing: {name}")
+        try:
+            output = run_repo(
+                repo_name, repo_config, settings, modules,
+                output_format=args.format,
+                ai_enabled=args.ai,
+                predictor=predictor,
+                verbose=args.verbose,
+                include_ignored=args.include_ignored,
+                config_dir=config.get('config_dir', ''),
+                config_path=config.get('config_path', ''),
+                **({'hits': hits, 'fail_above': fail_above} if fail_above is not None else {}),
+            )
+        except IgnoreListError:
+            raise  # the shared ignore list is unusable, so no repo can be scanned
+        except Exception as e:
+            logging.getLogger(__name__).debug("Repo %s failed", name, exc_info=True)
+            failed.append(name)
+            # ConfigError text already names the repo, directory and fix.
+            print(e if isinstance(e, ConfigError) else f"{name}: FAILED ({e})", file=sys.stderr)
+            return
+        print(f"  {name} -> {output}")
 
     if len(repos) == 1 or not args.parallel:
         for repo_name, repo_config in repos.items():
-            _, output = process(repo_name, repo_config)
-            print(f"  -> {output}")
+            process(repo_name, repo_config)
     else:
-        with ThreadPoolExecutor() as executor:
-            futures = {
-                executor.submit(process, k, v): k for k, v in repos.items()
-            }
-            for future in as_completed(futures):
-                try:
-                    repo_name, output = future.result()
-                    print(f"  {repo_name} -> {output}")
-                except Exception as e:
-                    failed.append(futures[future])
-                    print(f"  {futures[future]}: FAILED — {e}", file=sys.stderr if args.quiet else sys.stdout)
+        with ThreadPoolExecutor(thread_name_prefix='repo') as executor:
+            for future in [executor.submit(process, k, v) for k, v in repos.items()]:
+                future.result()
 
     # A repo that failed to scan cannot be certified clean.
-    return (1 if hits or failed else 0) if fail_above is not None else 0, hits
+    return (1 if failed or hits else 0), hits
 
 
 def cmd_train(args, config: Dict) -> None:

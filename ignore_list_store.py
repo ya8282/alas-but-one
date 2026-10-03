@@ -33,7 +33,10 @@ def _mongo(uri: str, operation):
     """Runs operation(client), closing the client; re-raises Mongo failures without credentials."""
     client = None
     try:
-        client = MongoClient(uri)
+        try:
+            client = MongoClient(uri)
+        except ValueError as error:  # pymongo raises plain ValueError for malformed URIs
+            raise IgnoreListError(f'MongoDB URI is invalid: {redact(str(error), uri)}') from None
         return operation(client)
     except Exception as error:
         if type(error).__module__.split('.')[0] != 'pymongo':
@@ -56,15 +59,25 @@ def _ignore_file(settings: dict):
 
 def _require_pymongo() -> None:
     if MongoClient is None:
-        raise RuntimeError('pymongo is required for the MongoDB ignore list; install it or set ignore_list.file')
+        raise IgnoreListError('pymongo is required for the MongoDB ignore list; install it or set ignore_list.file')
 
 
 def _read_file(path: str) -> dict:
     try:
         with open(path) as f:
-            return json.load(f)
+            data = json.load(f)
     except FileNotFoundError:
         return {}
+    if not isinstance(data, dict):
+        raise IgnoreListError(f'{path}: ignore file must be a JSON object mapping repo names to word lists, not {type(data).__name__}')
+    return data
+
+
+def _repo_words(data: dict, repo: str, path: str) -> set[str]:
+    words = data.get(repo, [])
+    if not isinstance(words, list):
+        raise IgnoreListError(f'{path}: value for repo {repo!r} must be a list of words, not {type(words).__name__}')
+    return set(words)
 
 
 def _write_file(path: str, data: dict) -> None:
@@ -102,7 +115,7 @@ def resolve_ignore_list_settings(settings: dict) -> tuple[str, str, str]:
 def load_words(repo: str, settings: dict) -> set[str]:
     path = _ignore_file(settings)
     if path:
-        return set(_read_file(path).get(repo, []))
+        return _repo_words(_read_file(path), repo, path)
     _require_pymongo()
     uri, database, collection = resolve_ignore_list_settings(settings)
     result = _mongo(uri, lambda client: client[database][collection].find_one({'repo_name': repo}))
@@ -114,7 +127,7 @@ def apply_decisions(repo: str, decisions: dict[str, bool], settings: dict) -> No
     if path:
         if decisions:
             data = _read_file(path)
-            words = set(data.get(repo, []))
+            words = _repo_words(data, repo, path)
             words |= {w for w, ignore in decisions.items() if ignore}
             words -= {w for w, ignore in decisions.items() if not ignore}
             data[repo] = sorted(words)

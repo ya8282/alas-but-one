@@ -109,7 +109,7 @@ class AIReviewer:
         snippet = lines[max(0, i - 1): min(len(lines), i + 2)]
         return " | ".join(ln.strip() for ln in snippet if ln.strip()) or None
 
-    def _review_batch(self, tokens: List[Token], content_map: Dict[str, str]) -> None:
+    def _review_batch(self, tokens: List[Token], content_map: Dict[str, str], batch_no: int = 1) -> None:
         client = self._get_client()
 
         if self.send_context:
@@ -138,7 +138,7 @@ class AIReviewer:
         raw = next((b.text for b in response.content if b.type == "text"), None)
         if raw is None:
             raise ValueError("model response has no text block")
-        logger.debug("AI batch of %d words, raw response: %s", len(tokens), raw)
+        logger.debug("AI batch %d (%d words) raw response: %s", batch_no, len(tokens), raw)
 
         results = json.loads(raw)["results"]
         returned = [r["word"] for r in results]
@@ -173,11 +173,12 @@ class AIReviewer:
         print(f"  [AI reviewer] reviewing {len(candidates)} borderline tokens via {self.model}")
         for i in range(0, len(candidates), self.batch_size):
             batch = candidates[i: i + self.batch_size]
+            batch_no = i // self.batch_size + 1
             try:
-                self._review_batch(batch, content_map)
+                self._review_batch(batch, content_map, batch_no)
             except Exception as e:
-                logger.debug("AI batch %d failed: %r", i // self.batch_size + 1, e)
-                print(f"  [AI reviewer] batch {i // self.batch_size + 1} failed: {e}")
+                logger.debug("AI batch %d failed: %r", batch_no, e)
+                print(f"  [AI reviewer] batch {batch_no} failed: {e}")
 
         reviewed = sum(1 for t in candidates if t.ai_reviewed)
         print(f"  [AI reviewer] {reviewed}/{len(candidates)} tokens reviewed")

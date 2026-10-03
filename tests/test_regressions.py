@@ -652,6 +652,29 @@ class ConfigErrorMessageTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertEqual(result.stderr.strip(), self.MISSING.format(cfg))
 
+    def test_malformed_config_json_names_file_and_position(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cfg = os.path.join(directory, 'c.json')
+            Path(cfg).write_text('{\n  "settings": }')
+            result = self._cli('--config', cfg)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), f'Config file {cfg} is not valid JSON: line 2 column 15: Expecting value.')
+
+    def test_save_ignore_list_missing_input_exits_with_message(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            result = self._cli('nope.jsonl', script='save_ignore_list.py', cwd=directory)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), f'Input file {os.path.join(directory, "nope.jsonl")} not found.')
+
+    def test_malformed_mongo_uri_is_a_clean_error_without_credentials(self):
+        from ignore_list_store import IgnoreListError, _mongo
+        with self.assertRaises(IgnoreListError) as caught:
+            _mongo('mongodb://SECRETUSER:SECRETPW@host:12x/db', lambda client: None)
+        self.assertIn('MongoDB URI is invalid: Port contains non-digit characters', str(caught.exception))
+        self.assertNotIn('SECRETPW', str(caught.exception))
+
+
 class FailAboveTests(unittest.TestCase):
     def _run(self, directory, *flags, ignored=()):
         from contextlib import chdir
@@ -736,7 +759,47 @@ class FailAboveTests(unittest.TestCase):
             with self.assertRaises(SystemExit) as raised:
                 alas.main()
         self.assertEqual((raised.exception.code, out.getvalue()), (1, ''))
-        self.assertIn('b: FAILED', err.getvalue())
+        self.assertIn('B: FAILED', err.getvalue())
+    def test_failed_repo_does_not_stop_others_and_exits_1(self):
+        import alas
+        config = {'settings': {}, 'modules': {}, 'repositories': {
+            'a': {'name': 'A'}, 'b': {'name': 'B'}, 'c': {'name': 'C'}}}
+        for flags in [(), ('--parallel',)]:
+            scanned = []
+            def fake(name, repo_config, *a, **k):
+                scanned.append(repo_config['name'])
+                if repo_config['name'] == 'A':
+                    raise ValueError('Invalid directory: nope')
+                return 'out'
+            out, err = io.StringIO(), io.StringIO()
+            with patch('sys.argv', ['alas.py', *flags]), patch('alas.load_config', return_value=config), \
+                    patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+                    redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas', 'DEBUG'):
+                with self.assertRaises(SystemExit) as raised:
+                    alas.main()
+            self.assertEqual((raised.exception.code, sorted(scanned)), (1, ['A', 'B', 'C']), flags)
+            self.assertIn('A: FAILED (Invalid directory: nope)', err.getvalue())
+            self.assertIn('B -> out', out.getvalue())
+            self.assertIn('C -> out', out.getvalue())
+
+    def test_quiet_serial_prints_hits_from_repos_that_finished_despite_failure(self):
+        import alas
+        config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
+        def fake(name, repo_config, *a, hits=None, **k):
+            if repo_config['name'] == 'A':
+                hits.append(('A', Token('x', 'A', [TokenLocation('f', 1)], confidence=0.9)))
+                return 'out'
+            raise ValueError('boom')
+        out, err = io.StringIO(), io.StringIO()
+        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet']), patch('alas.load_config', return_value=config), \
+                patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+                redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas', 'DEBUG'):
+            with self.assertRaises(SystemExit) as raised:
+                alas.main()
+        self.assertEqual(raised.exception.code, 1)
+        self.assertEqual(out.getvalue(), 'A\tx\t0.90\tf:1\n')
+        self.assertIn('B: FAILED (boom)', err.getvalue())
+
 
 class LogFileTests(unittest.TestCase):
     def setUp(self):
@@ -797,6 +860,32 @@ class LogFileTests(unittest.TestCase):
             text = Path(log).read_text()
             self.assertIn('RAW-NOT-JSON-123', text)
             self.assertIn('AI batch 1 failed', text)
+
+    def test_ai_raw_response_line_carries_batch_index(self):
+        import alas
+        with tempfile.TemporaryDirectory() as directory:
+            log = os.path.join(directory, 'ai.log')
+            handler = alas.setup_logging(log)
+            try:
+                tokens = {w: Token(w, 'test', [TokenLocation('a.md', 1)], confidence=0.5) for w in ('teh', 'wrld')}
+                reviewer = AIReviewer({'ai': {'enabled': True, 'batch_size': 1}})
+                client = Mock()
+                client.messages.create.return_value.content = [Mock(type='text', text='RAW-NOT-JSON')]
+                with patch.object(reviewer, '_get_client', return_value=client), redirect_stdout(io.StringIO()):
+                    reviewer.run(tokens, {'a.md': 'teh wrld'})
+            finally:
+                alas.teardown_logging(handler)
+            text = Path(log).read_text()
+            for n in (1, 2):
+                self.assertRegex(text, rf'AI batch {n} \(1 words\) raw response: RAW-NOT-JSON')
+                self.assertIn(f'AI batch {n} failed', text)
+
+    def test_log_lines_carry_thread_name_and_repo_start(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'sample.txt').write_text('retreive')
+            log = os.path.join(directory, 'run.log')
+            self._main(directory, '--log', log)
+            self.assertRegex(Path(log).read_text(), r'DEBUG \[MainThread\] alas: test : start')
 
 
 class AISendContextTests(unittest.TestCase):
@@ -901,6 +990,31 @@ class FileIgnoreListTests(unittest.TestCase):
             self.assertEqual(load_words('a', settings), {'zeta'})
             self.assertEqual(load_words('b', settings), {'other'})
             self.assertEqual(os.listdir(os.path.dirname(path)), ['ignore.json'])
+
+    def test_malformed_ignore_file_names_the_file(self):
+        from ignore_list_store import IgnoreListError, load_words, apply_decisions
+        for label, content in [('list top level', '["a"]'), ('string repo value', '{"a": "word"}')]:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
+                path = os.path.join(directory, 'ignore.json')
+                Path(path).write_text(content)
+                settings = {'ignore_list': {'file': path}}
+                for operation in [lambda: load_words('a', settings), lambda: apply_decisions('a', {'w': True}, settings)]:
+                    with self.assertRaises(IgnoreListError) as caught:
+                        operation()
+                    self.assertIn(path, str(caught.exception))
+
+    def test_save_ignore_list_missing_pymongo_exits_without_traceback(self):
+        import save_ignore_list
+        from contextlib import chdir
+        with tempfile.TemporaryDirectory() as directory, chdir(directory):
+            config = os.path.join(directory, 'config.json')
+            Path(config).write_text(json.dumps({'settings': {'ignore_list': {'database': 'd', 'collection': 'c'}}, 'repos': []}))
+            reviewed = os.path.join(directory, 'out.jsonl')
+            Path(reviewed).write_text(json.dumps({'repo': 'r', 'word': 'w', 'ignore': True}) + '\n')
+            with patch('sys.argv', ['save_ignore_list.py', reviewed]), patch.dict(os.environ, {'ABO_CONFIG': config}, clear=True), \
+                    patch('ignore_list_store.MongoClient', None), self.assertRaises(SystemExit) as caught:
+                save_ignore_list.main()
+            self.assertIn('pymongo is required', str(caught.exception.code))
 
     def test_relative_file_resolves_against_config_dir(self):
         from config import load_config
