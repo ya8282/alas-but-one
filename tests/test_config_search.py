@@ -152,6 +152,31 @@ class SettingsTypeTests(unittest.TestCase):
                     self.load(settings)
                 self.assertIn(key, str(ctx.exception))
 
+    def test_max_occurrences_default_is_one_for_every_stage(self):
+        from alas_but_one.ai.reviewer import AIReviewer
+        from alas_but_one.matchers.max_occurrence_matcher import MaxOccurrenceMatcherTask
+        from alas_but_one.matchers.spell_checker import SpellCheckerTask
+        from alas_but_one.models.token import Token
+        settings = self.load({})['settings']
+
+        def tok(word, n):
+            t = Token(word, 'r', [object()] * n)
+            t.part_occurrences = {word: n}
+            return t
+        tokens = {'zzqxv': tok('zzqxv', 1), 'zzqxw': tok('zzqxw', 2)}
+        kept = MaxOccurrenceMatcherTask(settings, {}).run(dict(tokens))
+        flagged = SpellCheckerTask(settings, {}).run(dict(tokens))
+        self.assertEqual(list(kept), ['zzqxv'])
+        self.assertEqual([w for w, t in flagged.items() if t.misspelled], ['zzqxv'])
+        self.assertEqual(AIReviewer(settings).max_occ, 1)
+
+    def test_max_occurrences_type_checked(self):
+        for bad in (0, -1, True, 1.5, '1'):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ConfigError) as ctx:
+                    self.load({'maxOccurrences': bad})
+                self.assertIn('settings.maxOccurrences', str(ctx.exception))
+
     def test_non_dict_settings_and_top_level(self):
         for body, key in (({'settings': []}, 'settings'), ([], 'top level')):
             with self.subTest(key=key):

@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_MODEL_PATH = 'models/classifier.json'
+DEFAULT_MAX_OCCURRENCES = 1  # every stage reads settings.maxOccurrences with this fallback
 
 
 class ConfigError(Exception):
@@ -107,6 +108,9 @@ def load_config(path: str = DEFAULT_CONFIG, require_repositories: bool = False) 
     settings = config.setdefault('settings', {})
     if not isinstance(settings, dict):
         raise ConfigError(f"settings in {cfg_path} must be an object. Edit that key in the config file.")
+    max_occ = settings.get('maxOccurrences', DEFAULT_MAX_OCCURRENCES)
+    if isinstance(max_occ, bool) or not isinstance(max_occ, int) or max_occ < 1:
+        raise ConfigError(f"settings.maxOccurrences in {cfg_path} must be a positive integer. Edit that key in the config file.")
     ignore_list = settings.get('ignore_list')
     if ignore_list is not None and not isinstance(ignore_list, dict):
         raise ConfigError(f"settings.ignore_list in {cfg_path} must be an object. Edit that key in the config file.")
@@ -172,7 +176,7 @@ def adhoc_config(path: str, config: Optional[Dict[str, Any]] = None) -> Dict[str
         cwd = os.getcwd()
         config = {
             'settings': {
-                'maxOccurrences': 1,
+                'maxOccurrences': DEFAULT_MAX_OCCURRENCES,
                 'output_dir': cwd,
                 'training': {'model_path': config_relative(DEFAULT_MODEL_PATH, cwd)},
             },

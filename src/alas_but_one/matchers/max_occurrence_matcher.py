@@ -1,4 +1,5 @@
 from typing import Dict
+from alas_but_one.config import DEFAULT_MAX_OCCURRENCES
 from alas_but_one.tasks.base_task import BaseTask
 from alas_but_one.models.token import Token
 
@@ -8,7 +9,7 @@ class MaxOccurrenceMatcherTask(BaseTask):
         filtered_token_dict = {}
 
         for word, token in validated_tokens.items():
-            if len(token.locations) <= self.settings_config.get('maxOccurrences', 1):
+            if len(token.locations) <= self.settings_config.get('maxOccurrences', DEFAULT_MAX_OCCURRENCES):
                 filtered_token_dict[word] = token
 
         return self.validate_output(filtered_token_dict)

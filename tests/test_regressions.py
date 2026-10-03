@@ -98,7 +98,7 @@ class RegressionTests(unittest.TestCase):
             self.assertEqual(tokens['http'].uppercase_ratio, 0.5)
             self.assertEqual(tokens['i'].uppercase_occurrences, 0)
             with patch('alas_but_one.matchers.spell_checker.SpellChecker', return_value=checker):
-                SpellCheckerTask({}, {}).run(tokens)
+                SpellCheckerTask({'maxOccurrences': 99}, {}).run(tokens)
             results.append(tokens['http'].confidence)
         self.assertEqual(results, [0.3, 0.3])
         self.assertEqual(Token('empty', 'test', []).uppercase_ratio, 0)

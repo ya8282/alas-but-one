@@ -1,4 +1,5 @@
 from typing import Dict
+from alas_but_one.config import DEFAULT_MAX_OCCURRENCES
 from alas_but_one.tasks.base_task import BaseTask
 from alas_but_one.models.token import Token
 from spellchecker import SpellChecker
@@ -24,7 +25,7 @@ class SpellCheckerTask(BaseTask):
             + [p for ps in parts.values() for p in ps if len(p) >= MIN_COMPOUND_PART]
             + [''.join(ps) for ps in parts.values()])
 
-        limit = self.settings_config.get('maxOccurrences', float('inf'))
+        limit = self.settings_config.get('maxOccurrences', DEFAULT_MAX_OCCURRENCES)
 
         for word, token in validated_tokens.items():
             counts = token.part_occurrences or {}
