@@ -70,7 +70,7 @@ python alas.py --config ~/abo.json           # config file elsewhere (or set ABO
 
 ### CI mode
 
-`--fail-above X` (0 to 1) scans every repo and writes the output files as usual, then exits 1 if any candidate has `confidence >= X`, else 0. Candidates on the ignore list or approved terms never count, including with `--include-ignored`. With `--parallel` the check covers all repos; a repo that fails to scan also exits 1.
+`--fail-above X` (0 to 1) scans every repo and writes the output files as usual, then exits 1 if any candidate has `confidence >= X`, else 0. Candidates on the ignore list or approved terms never count, including with `--include-ignored`. With or without `--fail-above`, a repo that fails to scan is reported on stderr, the remaining repos are still scanned, and the run exits 1.
 
 `--quiet` (requires `--fail-above`) suppresses progress output and prints only the qualifying candidates to stdout, one per line, tab-separated: `repo`, `word`, `confidence`, `file:line` (first location). Repo scan failures go to stderr; AI reviewer messages, including batch failures, are suppressed, so use --log to see them.
 

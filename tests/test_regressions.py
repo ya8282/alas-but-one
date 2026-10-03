@@ -759,7 +759,47 @@ class FailAboveTests(unittest.TestCase):
             with self.assertRaises(SystemExit) as raised:
                 alas.main()
         self.assertEqual((raised.exception.code, out.getvalue()), (1, ''))
-        self.assertIn('b: FAILED', err.getvalue())
+        self.assertIn('B: FAILED', err.getvalue())
+    def test_failed_repo_does_not_stop_others_and_exits_1(self):
+        import alas
+        config = {'settings': {}, 'modules': {}, 'repositories': {
+            'a': {'name': 'A'}, 'b': {'name': 'B'}, 'c': {'name': 'C'}}}
+        for flags in [(), ('--parallel',)]:
+            scanned = []
+            def fake(name, repo_config, *a, **k):
+                scanned.append(repo_config['name'])
+                if repo_config['name'] == 'A':
+                    raise ValueError('Invalid directory: nope')
+                return 'out'
+            out, err = io.StringIO(), io.StringIO()
+            with patch('sys.argv', ['alas.py', *flags]), patch('alas.load_config', return_value=config), \
+                    patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+                    redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas', 'DEBUG'):
+                with self.assertRaises(SystemExit) as raised:
+                    alas.main()
+            self.assertEqual((raised.exception.code, sorted(scanned)), (1, ['A', 'B', 'C']), flags)
+            self.assertIn('A: FAILED (Invalid directory: nope)', err.getvalue())
+            self.assertIn('B -> out', out.getvalue())
+            self.assertIn('C -> out', out.getvalue())
+
+    def test_quiet_serial_prints_hits_from_repos_that_finished_despite_failure(self):
+        import alas
+        config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
+        def fake(name, repo_config, *a, hits=None, **k):
+            if repo_config['name'] == 'A':
+                hits.append(('A', Token('x', 'A', [TokenLocation('f', 1)], confidence=0.9)))
+                return 'out'
+            raise ValueError('boom')
+        out, err = io.StringIO(), io.StringIO()
+        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet']), patch('alas.load_config', return_value=config), \
+                patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+                redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas', 'DEBUG'):
+            with self.assertRaises(SystemExit) as raised:
+                alas.main()
+        self.assertEqual(raised.exception.code, 1)
+        self.assertEqual(out.getvalue(), 'A\tx\t0.90\tf:1\n')
+        self.assertIn('B: FAILED (boom)', err.getvalue())
+
 
 class LogFileTests(unittest.TestCase):
     def setUp(self):
