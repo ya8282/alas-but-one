@@ -670,6 +670,41 @@ class ConfigErrorMessageTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertEqual(result.stderr.strip(), f'Input file {os.path.join(directory, "nope.jsonl")} not found.')
 
+    def _assert_clean_failure(self, result, message):
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stderr.strip(), message)
+        self.assertNotIn('Traceback', result.stderr)
+
+    def test_save_ignore_list_bad_jsonl_line_reports_line_number(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            Path(directory, 'out.jsonl').write_text('{"repo": "r", "word": "a", "ignore": true}\n\n{oops\n')
+            result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory)
+            self._assert_clean_failure(result, f'Input file {os.path.join(directory, "out.jsonl")} line 3 is not valid JSON.')
+
+    def test_save_ignore_list_input_directory_is_a_clean_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            os.mkdir(os.path.join(directory, 'd.jsonl'))
+            result = self._cli('d.jsonl', script='save_ignore_list.py', cwd=directory)
+            self._assert_clean_failure(result, f'Input file {os.path.join(directory, "d.jsonl")} cannot be read: Is a directory.')
+
+    def test_config_path_directory_is_a_clean_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            result = self._cli('--config', directory)
+            self._assert_clean_failure(result, f'Config file {directory} cannot be read: Is a directory.')
+
+    def test_ignore_file_malformed_json_is_a_clean_error(self):
+        from ignore_list_store import IgnoreListError, _read_file
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'i.json')
+            Path(path).write_text('{')
+            with self.assertRaisesRegex(IgnoreListError, 'ignore file is not valid JSON: line 1 column 2'):
+                _read_file(path)
+            with self.assertRaisesRegex(IgnoreListError, 'cannot be read: Is a directory'):
+                _read_file(directory)
+
     def test_malformed_mongo_uri_is_a_clean_error_without_credentials(self):
         from ignore_list_store import IgnoreListError, _mongo
         with self.assertRaises(IgnoreListError) as caught:

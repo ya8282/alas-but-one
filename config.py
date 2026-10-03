@@ -24,6 +24,8 @@ def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
             f"Config file {os.path.abspath(path)} not found. Create it (see Setup in the README), "
             "or set ABO_CONFIG to the path of an existing one (alas.py also accepts --config PATH)."
         ) from None
+    except OSError as error:
+        raise ConfigError(f"Config file {os.path.abspath(path)} cannot be read: {error.strerror}.") from None
     except json.JSONDecodeError as error:
         raise ConfigError(
             f"Config file {os.path.abspath(path)} is not valid JSON: "

@@ -68,6 +68,10 @@ def _read_file(path: str) -> dict:
             data = json.load(f)
     except FileNotFoundError:
         return {}
+    except OSError as error:
+        raise IgnoreListError(f'{path}: ignore file cannot be read: {error.strerror}') from None
+    except json.JSONDecodeError as error:
+        raise IgnoreListError(f'{path}: ignore file is not valid JSON: line {error.lineno} column {error.colno}: {error.msg}') from None
     if not isinstance(data, dict):
         raise IgnoreListError(f'{path}: ignore file must be a JSON object mapping repo names to word lists, not {type(data).__name__}')
     return data
