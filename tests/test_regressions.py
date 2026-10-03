@@ -3,10 +3,11 @@ import io
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import Mock, patch
 
 from tokenizer.tokenize_rst import TokenizerTask
@@ -98,6 +99,39 @@ class RegressionTests(unittest.TestCase):
             results.append(tokens['http'].confidence)
         self.assertEqual(results, [0.3, 0.3])
         self.assertEqual(Token('empty', 'test', []).uppercase_ratio, 0)
+
+    def test_hyphenated_compound_is_one_token_judged_by_its_components(self):
+        from matchers.spell_checker import SpellCheckerTask
+        content = {'sample.txt': 'Act pre-emptively.\nAdd-ons and how-tos.\n\nA well-knwon trick.'}
+        tokens = TokenizerTask({}, {'name': 'test'}).run(content)
+        self.assertEqual(set(tokens), {'act', 'pre-emptively', 'add-ons', 'and', 'how-tos', 'a', 'well-knwon', 'trick'})
+        for fragment in ('emptively', 'ons', 'tos', 'knwon', 'well'):
+            self.assertNotIn(fragment, tokens)
+        tokens = SpellCheckerTask({}, {}).run(tokens)
+        self.assertEqual({w for w, t in tokens.items() if t.misspelled}, {'well-knwon'})
+        self.assertEqual([(loc.filename, loc.line) for loc in tokens['well-knwon'].locations], [('sample.txt', 4)])
+        self.assertEqual(tokens['well-knwon'].suggestion, 'well-known')
+        self.assertEqual(tokens['well-knwon'].confidence, 0.6)
+        tokens = SpellCheckerTask({}, {}).run(TokenizerTask({}, {'name': 'test'}).run({'b.txt': 'Add-ons and ons.'}))
+        self.assertFalse(tokens['add-ons'].misspelled)
+        tokens = SpellCheckerTask({}, {}).run(TokenizerTask({}, {'name': 'test'}).run({'c.txt': 'knwon-knwonly'}))
+        self.assertEqual(tokens['knwon-knwonly'].suggestion, 'known-knwonly')
+
+    def test_ignore_list_covers_compound_of_listed_component(self):
+        from matchers.ignore_list_matcher import IgnoreListTask
+        tokens = TokenizerTask({}, {'name': 'repo'}).run({'a.txt': 'graphile-worker graphile-wroker graphile'})
+        with patch('matchers.ignore_list_matcher.load_words', return_value={'graphile'}):
+            result = IgnoreListTask({}, {'name': 'repo'}).run(tokens)
+        self.assertEqual({w: t.ignore for w, t in result.items()},
+                         {'graphile-worker': 'Y', 'graphile-wroker': 'N', 'graphile': 'Y'})
+
+    def test_compound_with_frequent_component_stays_trusted(self):
+        from matchers.spell_checker import SpellCheckerTask
+        settings = {'maxOccurrences': 1}
+        content = {'a.txt': 'zzyx-alpha\nzzyx-beta\nzzyx\nqqwv-gamma'}
+        tokens = TokenizerTask(settings, {'name': 'test'}).run(content)
+        tokens = SpellCheckerTask(settings, {}).run(tokens)
+        self.assertEqual({w for w, t in tokens.items() if t.misspelled}, {'qqwv-gamma'})
 
     def test_acronym_score_interpolates_and_standalone_casing_survives(self):
         from matchers.confidence_scorer import compute_confidence
@@ -352,7 +386,7 @@ class RegressionTests(unittest.TestCase):
         typo = Token('retreive', 'test', [], confidence=0.4)
         reviewer = AIReviewer({'ai':{'enabled':True}})
         client = Mock()
-        client.messages.create.return_value.content = [Mock(text='[{"word":"retreive","confidence":0.9}]')]
+        client.messages.create.return_value.content = [Mock(type='text', text='{"results":[{"word":"retreive","is_typo":true,"confidence":0.9,"suggestion":null,"comment":"c"}]}')]
         with patch.object(reviewer, '_get_client', return_value=client):
             reviewer.run({'mongodb':approved, 'retreive':typo}, {})
         user_message = client.messages.create.call_args.kwargs['messages'][0]['content']
@@ -578,6 +612,132 @@ class RegressionTests(unittest.TestCase):
                         alas.main()
                     load.assert_called_once_with(path)
 
+class ConfigErrorMessageTests(unittest.TestCase):
+    MISSING = 'Config file {} not found. Create it (see Setup in the README), or set ABO_CONFIG to the path of an existing one (alas.py also accepts --config PATH).'
+
+    def _cli(self, *args, script='alas.py', cwd=None, env_extra=None):
+        import subprocess
+        root = str(Path(__file__).resolve().parent.parent)
+        env = {k: v for k, v in os.environ.items() if k != 'ABO_CONFIG'}
+        env.update(env_extra or {})
+        if cwd:
+            script = os.path.join(root, script)
+            env['PYTHONPATH'] = root
+        return subprocess.run([sys.executable, script, *args], cwd=cwd or root, env=env, capture_output=True, text=True)
+
+    def test_invalid_directory_names_repo_directory_and_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cfg = os.path.join(directory, 'c.json')
+            Path(cfg).write_text(json.dumps({'settings': {}, 'modules': {}, 'repositories': {
+                'r': {'name': 'My Docs', 'path': 'nope'}}}))
+            result = self._cli('--config', cfg)
+            expected = f'Repository My Docs: directory {os.path.join(directory, "nope")} does not exist. Check "path" in {cfg}.'
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), expected)
+            self.assertNotIn('Traceback', result.stdout)
+
+    def test_missing_config_file_names_absolute_path_and_fix(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            result = self._cli('--config', 'absent.json', cwd=directory)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), self.MISSING.format(os.path.join(directory, 'absent.json')))
+
+    def test_save_ignore_list_missing_config_exits_with_message(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            Path(directory, 'out.jsonl').write_text('')
+            cfg = os.path.join(directory, 'absent.json')
+            result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory, env_extra={'ABO_CONFIG': cfg})
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), self.MISSING.format(cfg))
+
+class FailAboveTests(unittest.TestCase):
+    def _run(self, directory, *flags, ignored=()):
+        from contextlib import chdir
+        import alas
+        base = alas.load_config()
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}}, 'modules': base['modules'], 'repositories': {
+            'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
+        out, err = io.StringIO(), io.StringIO()
+        code = 0
+        with chdir(directory), redirect_stdout(out), redirect_stderr(err), patch('sys.argv', ['alas.py', *flags]), \
+                patch('alas.load_config', return_value=config), patch('alas.MLPredictor', return_value=Mock(available=False)), \
+                patch('matchers.ignore_list_matcher.load_words', return_value=set(ignored)):
+            try:
+                alas.main()
+            except SystemExit as e:
+                code = e.code
+        return code, out.getvalue(), err.getvalue()
+
+    def _corpus(self, directory):
+        Path(directory, 'sample.txt').write_text('retreive ordinary')
+
+    def _score(self, directory):
+        _, out, _ = self._run(directory, '--fail-above', '0', '--quiet')
+        return float(out.splitlines()[0].split('\t')[2])
+
+    def test_exit_code_boundary_is_inclusive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self._corpus(directory)
+            score = self._score(directory)
+            self.assertGreater(score, 0.5)
+            self.assertEqual(self._run(directory, '--fail-above', f'{score:.2f}')[0], 1)
+            self.assertEqual(self._run(directory, '--fail-above', f'{score + 0.01:.2f}')[0], 0)
+            self.assertTrue(os.path.exists(os.path.join(directory, 'test.jsonl')))
+
+    def test_ignored_candidates_never_fail_even_with_include_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self._corpus(directory)
+            for flags in [(), ('--include-ignored',)]:
+                code, out, _ = self._run(directory, '--fail-above', '0', '--quiet', *flags, ignored={'retreive'})
+                self.assertEqual(out.count('retreive'), 0)
+                self.assertEqual(self._run(directory, '--fail-above', '0.5', *flags, ignored={'retreive'})[0], 0)
+            self.assertIn('retreive', Path(directory, 'test.jsonl').read_text())
+
+    def test_quiet_prints_only_qualifying_lines_and_requires_fail_above(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self._corpus(directory)
+            score = self._score(directory)
+            code, out, err = self._run(directory, '--fail-above', f'{score:.2f}', '--quiet')
+            self.assertEqual(out, f"test\tretreive\t{score:.2f}\t{os.path.join(directory, 'sample.txt')}:1\n")
+            self.assertEqual(self._run(directory, '--fail-above', '0.99', '--quiet')[1], '')
+            code, out, err = self._run(directory, '--quiet')
+            self.assertEqual((code, out), (2, ''))
+            self.assertIn('--quiet requires --fail-above', err)
+            self.assertEqual(self._run(directory, '--fail-above', '1.5')[0], 2)
+
+    def test_parallel_aggregates_across_repos(self):
+        import alas
+        config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
+        def fake(name, repo_config, *a, hits=None, fail_above=None, **k):
+            if repo_config['name'] == 'B':
+                hits.append(('B', Token('x', 'B', [TokenLocation('f', 1)], confidence=0.9)))
+            return 'out'
+        for flags in [(), ('--parallel',)]:
+            with patch('sys.argv', ['alas.py', '--fail-above', '0.8', *flags]), patch('alas.load_config', return_value=config), \
+                    patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+                    redirect_stdout(io.StringIO()):
+                with self.assertRaises(SystemExit) as raised:
+                    alas.main()
+            self.assertEqual(raised.exception.code, 1)
+
+    def test_parallel_repo_failure_fails_the_gate_quietly(self):
+        import alas
+        config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
+        def fake(name, repo_config, *a, **k):
+            if repo_config['name'] == 'B':
+                raise ValueError('Invalid directory: nope')
+            return 'out'
+        out, err = io.StringIO(), io.StringIO()
+        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet', '--parallel']), patch('alas.load_config', return_value=config), \
+                patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+                redirect_stdout(out), redirect_stderr(err):
+            with self.assertRaises(SystemExit) as raised:
+                alas.main()
+        self.assertEqual((raised.exception.code, out.getvalue()), (1, ''))
+        self.assertIn('b: FAILED', err.getvalue())
+
 class LogFileTests(unittest.TestCase):
     def setUp(self):
         self._handlers = list(logging.getLogger().handlers)
@@ -629,7 +789,7 @@ class LogFileTests(unittest.TestCase):
                 t = Token('teh', 'test', [TokenLocation('a.md', 1)], confidence=0.5)
                 reviewer = AIReviewer({'ai': {'enabled': True}})
                 client = Mock()
-                client.messages.create.return_value.content = [Mock(text='RAW-NOT-JSON-123')]
+                client.messages.create.return_value.content = [Mock(type='text', text='RAW-NOT-JSON-123')]
                 with patch.object(reviewer, '_get_client', return_value=client), redirect_stdout(io.StringIO()):
                     reviewer.run({'teh': t}, {'a.md': 'teh'})
             finally:
@@ -648,7 +808,7 @@ class AISendContextTests(unittest.TestCase):
             ai_cfg['send_context'] = send_context
         reviewer = AIReviewer({'ai': ai_cfg})
         client = Mock()
-        client.messages.create.return_value.content = [Mock(text='[]')]
+        client.messages.create.return_value.content = [Mock(type='text', text='{"results": []}')]
         with patch.object(reviewer, '_get_client', return_value=client):
             reviewer.run({'teh': t}, content)
         return client.messages.create.call_args.kwargs['messages'][0]['content']
@@ -661,6 +821,66 @@ class AISendContextTests(unittest.TestCase):
         self.assertIn('teh', msg)
         for leaked in ('SECRET', 'first line', 'a.md', '"context"'):
             self.assertNotIn(leaked, msg)
+
+
+class AIStructuredResponseTests(unittest.TestCase):
+    @staticmethod
+    def _item(word, confidence=0.9, suggestion='the'):
+        return {'word': word, 'is_typo': True, 'confidence': confidence, 'suggestion': suggestion, 'comment': 'c'}
+
+    def _run(self, results=None, stop_reason='end_turn'):
+        tokens = {w: Token(w, 'test', [TokenLocation('a.md', 1)], confidence=0.5) for w in ('teh', 'wrld')}
+        reviewer = AIReviewer({'ai': {'enabled': True}})
+        client = Mock()
+        response = client.messages.create.return_value
+        response.stop_reason = stop_reason
+        response.content = [Mock(type='text', text=json.dumps({'results': results or []}))]
+        with patch.object(reviewer, '_get_client', return_value=client), redirect_stdout(io.StringIO()) as out:
+            reviewer.run(tokens, {'a.md': 'teh wrld'})
+        return tokens, client, out.getvalue()
+
+    def _assert_untouched(self, tokens, out):
+        for t in tokens.values():
+            self.assertFalse(t.ai_reviewed)
+            self.assertEqual(t.confidence, 0.5)
+            self.assertIsNone(t.ai_comment)
+        self.assertIn('batch 1 failed', out)
+
+    def test_request_uses_json_schema_output(self):
+        _, client, _ = self._run()
+        fmt = client.messages.create.call_args.kwargs['output_config']['format']
+        self.assertEqual(fmt['type'], 'json_schema')
+        self.assertFalse(fmt['schema']['additionalProperties'])
+        self.assertEqual(fmt['schema']['required'], ['results'])
+
+    def test_matching_response_is_applied(self):
+        tokens, _, _ = self._run([self._item('wrld', 0.8, None), self._item('teh', 0.95)])
+        self.assertTrue(all(t.ai_reviewed for t in tokens.values()))
+        self.assertEqual(tokens['teh'].confidence, 0.95)
+        self.assertEqual(tokens['teh'].suggestion, 'the')
+        self.assertEqual(tokens['wrld'].confidence, 0.8)
+        self.assertIsNone(tokens['wrld'].suggestion)
+
+    def test_missing_word_fails_whole_batch(self):
+        tokens, _, out = self._run([self._item('teh')])
+        self._assert_untouched(tokens, out)
+
+    def test_extra_word_fails_whole_batch(self):
+        tokens, _, out = self._run([self._item('teh'), self._item('wrld'), self._item('other')])
+        self._assert_untouched(tokens, out)
+
+    def test_duplicate_word_fails_whole_batch(self):
+        tokens, _, out = self._run([self._item('teh'), self._item('teh'), self._item('wrld')])
+        self._assert_untouched(tokens, out)
+
+    def test_invalid_value_leaves_earlier_tokens_untouched(self):
+        tokens, _, out = self._run([self._item('teh'), self._item('wrld', confidence='high')])
+        self._assert_untouched(tokens, out)
+
+    def test_refusal_and_truncation_fail_batch(self):
+        for reason in ('refusal', 'max_tokens'):
+            tokens, _, out = self._run([self._item('teh'), self._item('wrld')], stop_reason=reason)
+            self._assert_untouched(tokens, out)
 
 
 class FileIgnoreListTests(unittest.TestCase):
@@ -706,6 +926,107 @@ class FileIgnoreListTests(unittest.TestCase):
         ignored = set(json.loads((data / 'ignore.json').read_text())['Railway'])
         typos = {t['word'] for t in json.loads((data / 'typos.json').read_text())}
         self.assertFalse(ignored & typos)
+
+
+class MongoCredentialLeakTests(unittest.TestCase):
+    URI = 'mongodb://SECRETUSER:SECRETPW@db.example.com:27017/admin'
+
+    def _failures(self):
+        from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
+        uri = self.URI
+        timeout = ServerSelectionTimeoutError(f'db.example.com:27017: timed out ({uri}), user SECRETUSER password SECRETPW')
+        yield 'timeout on operation', {'side_effect': None}, timeout
+        yield 'constructor failure', {'side_effect': ConfigurationError(f'bad uri {uri}')}, None
+
+    def _client(self, params, error):
+        if params['side_effect'] is not None:
+            return Mock(side_effect=params['side_effect'])
+        client = Mock()
+        client.__getitem__ = Mock(side_effect=error)
+        return Mock(return_value=client)
+
+    def _assert_clean(self, *texts):
+        for text in texts:
+            self.assertNotIn('SECRETUSER', text)
+            self.assertNotIn('SECRETPW', text)
+            self.assertNotIn(self.URI, text)
+
+    def _config(self, directory, uri_in_config):
+        modules = json.loads(Path(__file__).resolve().parent.parent.joinpath('config.json').read_text())['modules']
+        Path(directory, 'docs').mkdir()
+        Path(directory, 'docs', 'sample.txt').write_text('retreive')
+        settings = {'maxOccurrences': 1, 'ignore_list': {'database': 'db', 'collection': 'words'}}
+        if uri_in_config:
+            settings['MONGODB_URI'] = self.URI
+        path = os.path.join(directory, 'config.json')
+        Path(path).write_text(json.dumps({'settings': settings, 'modules': modules, 'repositories': {
+            'r': {'name': 'R', 'path': os.path.join(directory, 'docs')}}}))
+        return path
+
+    def test_alas_run_failures_never_print_uri_or_credentials(self):
+        import alas
+        from contextlib import chdir
+        for uri_in_config in [True, False]:
+            for label, params, error in self._failures():
+                with self.subTest(label=label, uri_in_config=uri_in_config), tempfile.TemporaryDirectory() as directory, chdir(directory):
+                    config = self._config(directory, uri_in_config)
+                    log = os.path.join(directory, 'run.log')
+                    env = {} if uri_in_config else {'ABO_MONGO_URI': self.URI}
+                    out, err = io.StringIO(), io.StringIO()
+                    with patch('sys.argv', ['alas.py', '--config', config, '--log', log]), patch.dict(os.environ, env, clear=True), \
+                            patch('alas.MLPredictor', return_value=Mock(available=False)), \
+                            patch('ignore_list_store.MongoClient', self._client(params, error)), \
+                            redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as caught:
+                        alas.main()
+                    self.assertNotEqual(caught.exception.code, 0)
+                    self.assertIn('MongoDB error', str(caught.exception.code))
+                    self._assert_clean(out.getvalue(), err.getvalue(), str(caught.exception.code), Path(log).read_text())
+
+    def test_save_ignore_list_failures_never_print_uri_or_credentials(self):
+        import save_ignore_list
+        from contextlib import chdir
+        for label, params, error in self._failures():
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as directory, chdir(directory):
+                config = self._config(directory, False)
+                reviewed = os.path.join(directory, 'out.jsonl')
+                Path(reviewed).write_text(json.dumps({'repo': 'r', 'word': 'retreive', 'ignore': True}) + '\n')
+                out, err = io.StringIO(), io.StringIO()
+                with patch('sys.argv', ['save_ignore_list.py', reviewed]), patch.dict(os.environ, {'ABO_CONFIG': config, 'ABO_MONGO_URI': self.URI}, clear=True), \
+                        patch('ignore_list_store.MongoClient', self._client(params, error)), \
+                        redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as caught:
+                    save_ignore_list.main()
+                self.assertIn('MongoDB error', str(caught.exception.code))
+                self._assert_clean(out.getvalue(), err.getvalue(), str(caught.exception.code))
+
+    def test_invalid_config_errors_never_print_uri_or_credentials(self):
+        from ignore_list_store import resolve_ignore_list_settings
+        settings = {'MONGODB_URI': self.URI, 'ignore_list': {'database': '', 'collection': 'words'}}
+        with patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError) as caught:
+            resolve_ignore_list_settings(settings)
+        self._assert_clean(str(caught.exception))
+
+    def test_committed_example_config_has_no_credentials(self):
+        text = Path(__file__).resolve().parent.parent.joinpath('config.json').read_text()
+        self.assertNotRegex(text, r'://[^/\s"]*@')
+
+    def test_redaction_covers_encoded_credentials_and_other_uris(self):
+        from pymongo.errors import OperationFailure
+        from ignore_list_store import IgnoreListError, load_words
+        uri = 'mongodb+srv://us%40er:p%40ss%3Aw%2Frd@cluster.example.net/?retryWrites=true'
+        message = 'auth us@er p@ss:w/rd failed; seed mongodb://OTHERUSER:OTHERPW@replica.example.net:27017'
+        client = Mock()
+        client.__getitem__ = Mock(side_effect=OperationFailure(message))
+        settings = {'ignore_list': {'database': 'db', 'collection': 'words'}}
+        with patch.dict(os.environ, {'ABO_MONGO_URI': uri}, clear=True), \
+                patch('ignore_list_store.MongoClient', Mock(return_value=client)), \
+                self.assertRaises(IgnoreListError) as caught:
+            load_words('repo', settings)
+        text = str(caught.exception)
+        for secret in ['us@er', 'p@ss:w/rd', 'OTHERUSER', 'OTHERPW']:
+            self.assertNotIn(secret, text)
+        self.assertIn('replica.example.net', text)
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertTrue(caught.exception.__suppress_context__)
 
 
 if __name__ == '__main__':

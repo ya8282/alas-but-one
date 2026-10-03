@@ -17,7 +17,7 @@ import csv
 import json
 import re
 import sys
-from config import default_config_path, load_config
+from config import ConfigError, default_config_path, load_config
 from ignore_list_store import apply_decisions
 
 
@@ -79,10 +79,10 @@ def main():
     else:
         sys.exit("Input file must be .jsonl or .csv")
 
-    settings = load_config(default_config_path())['settings']
     try:
+        settings = load_config(default_config_path())['settings']
         _apply_updates(update_dict, settings)
-    except ValueError as error:
+    except (ValueError, ConfigError) as error:
         sys.exit(str(error))
 
 

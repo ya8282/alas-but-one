@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 _SYSTEM_PROMPT = (
     "You are a technical documentation quality reviewer. "
     "Your task is to classify rare words as typos or legitimate technical terms. "
-    "Respond ONLY with a JSON array — no prose, no markdown."
+    "Return one result per requested word."
 )
 
 _USER_TEMPLATE = """\
@@ -21,9 +21,32 @@ For each word, judge whether it is a typo that should be corrected.
 Words (with surrounding context if provided):
 {words_json}
 
-Respond with a JSON array, one object per word in the same order:
-[{{"word": "...", "is_typo": true/false, "confidence": 0.0-1.0, \
-"suggestion": "corrected word or null", "comment": "one-line reasoning"}}]"""
+Return exactly one result per word, with each word spelled exactly as given. \
+confidence is between 0.0 and 1.0; suggestion is the corrected word or null; \
+comment is one-line reasoning."""
+
+_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "word": {"type": "string"},
+                    "is_typo": {"type": "boolean"},
+                    "confidence": {"type": "number"},
+                    "suggestion": {"type": ["string", "null"]},
+                    "comment": {"type": "string"},
+                },
+                "required": ["word", "is_typo", "confidence", "suggestion", "comment"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["results"],
+    "additionalProperties": False,
+}
 
 
 def get_source_line(token: Token, content_map: Optional[Dict[str, str]]) -> Optional[str]:
@@ -104,28 +127,34 @@ class AIReviewer:
 
         response = client.messages.create(
             model=self.model,
-            max_tokens=1024,
+            max_tokens=4096,
             system=_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_msg}],
+            output_config={"format": {"type": "json_schema", "schema": _RESPONSE_SCHEMA}},
         )
 
-        raw = response.content[0].text.strip()
+        if response.stop_reason in ("refusal", "max_tokens"):
+            raise ValueError(f"model response unusable (stop_reason={response.stop_reason})")
+        raw = next((b.text for b in response.content if b.type == "text"), None)
+        if raw is None:
+            raise ValueError("model response has no text block")
         logger.debug("AI batch of %d words, raw response: %s", len(tokens), raw)
-        # Strip markdown code fences if present
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
 
-        results = json.loads(raw.strip())
+        results = json.loads(raw)["results"]
+        returned = [r["word"] for r in results]
+        if sorted(returned) != sorted(t.text for t in tokens):
+            raise ValueError(
+                "returned words do not match the request "
+                f"(requested {[t.text for t in tokens]}, returned {returned})"
+            )
         result_map = {r["word"]: r for r in results}
+        # Validate every value before mutating, so a bad batch changes nothing.
+        parsed = [round(float(result_map[t.text]["confidence"]), 4) for t in tokens]
 
-        for t in tokens:
-            r = result_map.get(t.text)
-            if not r:
-                continue
+        for t, confidence in zip(tokens, parsed):
+            r = result_map[t.text]
             t.ai_reviewed = True
-            t.confidence = round(float(r.get("confidence", t.confidence)), 4)
+            t.confidence = confidence
             suggestion = r.get("suggestion")
             if suggestion and suggestion != t.text:
                 t.suggestion = suggestion

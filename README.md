@@ -35,6 +35,8 @@ Edit the settings and repositories in `config.json`; keep its existing `modules`
 }
 ```
 
+**Credentials:** keep them out of `config.json`. Leave `MONGODB_URI` credential-free (as above) and put the real connection string, with `user:password`, in the `ABO_MONGO_URI` environment variable (for example `export ABO_MONGO_URI='mongodb+srv://user:password@cluster.example.net'`; percent-encode special characters in the user and password with `urllib.parse.quote_plus`). If you must keep a secret in a config file, keep it out of version control: add `config.json` (or your `ABO_CONFIG` path) to the `.gitignore` of the repository that holds it. The `config.json` committed here is the localhost example and holds no secrets.
+
 Each repository names the directory to walk with `path`: absolute, `~`-prefixed, or relative to the config file's directory. `source_dir` is optional and is joined onto `path`. The older `settings.repo_base_full_path` + `relative_path` + `source_dir` form still works when `path` is absent.
 
 The config file is `./config.json` by default. Point both `alas.py` and `save_ignore_list.py` elsewhere with `ABO_CONFIG=/path/to/config.json`, or pass `--config PATH` to `alas.py`.
@@ -58,10 +60,22 @@ python alas.py --repo "My Docs"              # single repo by display name
 python alas.py --ai                          # AI review of borderline tokens
 python alas.py --parallel                    # process repos concurrently
 python alas.py --include-ignored             # audit or reverse prior ignore decisions
+python alas.py --fail-above 0.8               # CI gate: exit 1 if any non-ignored candidate scores >= 0.8
+python alas.py --fail-above 0.8 --quiet       # ...and print only those candidates
 python alas.py --verbose                     # per-stage token counts
 python alas.py --log run.log                 # debug log file (or settings.log_file)
 python alas.py --train labels.jsonl          # train ML classifier from labeled output
 python alas.py --config ~/abo.json           # config file elsewhere (or set ABO_CONFIG)
+```
+
+### CI mode
+
+`--fail-above X` (0 to 1) scans every repo and writes the output files as usual, then exits 1 if any candidate has `confidence >= X`, else 0. Candidates on the ignore list or approved terms never count, including with `--include-ignored`. With `--parallel` the check covers all repos; a repo that fails to scan also exits 1.
+
+`--quiet` (requires `--fail-above`) suppresses progress output and prints only the qualifying candidates to stdout, one per line, tab-separated: `repo`, `word`, `confidence`, `file:line` (first location). Repo scan failures go to stderr; AI reviewer messages, including batch failures, are suppressed, so use --log to see them.
+
+```bash
+python alas.py --fail-above 0.8 --quiet || echo "typo candidates found"
 ```
 
 ## Output
@@ -102,7 +116,7 @@ The spell checker flags unknown words and computes a `confidence` score using ed
 
 **AI review (optional, `--ai`)**
 
-Tokens with confidence between 0.3 and 0.7 — the borderline cases where the heuristic is uncertain — are sent to Anthropic's API in batches. Each word is sent with its context: the source line it first appears on plus the lines directly above and below (up to three lines, joined with ` | `). Set `ai.send_context` to `false` to send bare words only, with no document text or file paths; this is recommended for confidential documentation, though suggestions may be less accurate without context. Approved terms are excluded even with `--include-ignored`. Claude updates `confidence`, `suggestion`, and `ai_comment` for each. Requires `ANTHROPIC_API_KEY` to be set.
+Tokens with confidence between 0.3 and 0.7 — the borderline cases where the heuristic is uncertain — are sent to Anthropic's API in batches. Each word is sent with its context: the source line it first appears on plus the lines directly above and below (up to three lines, joined with ` | `). Set `ai.send_context` to `false` to send bare words only, with no document text or file paths; this is recommended for confidential documentation, though suggestions may be less accurate without context. Approved terms are excluded even with `--include-ignored`. Claude updates `confidence`, `suggestion`, and `ai_comment` for each. Responses use Anthropic structured outputs (a JSON schema), so no text parsing is involved. A batch fails as a whole, leaving its tokens unchanged, if the model refuses, is truncated, or returns a word list that differs from the request (missing, extra or duplicate words). The configured `ai.model` must support structured outputs. Requires `ANTHROPIC_API_KEY` to be set.
 
 The review thresholds and model are configurable in `config.json`:
 
@@ -140,7 +154,7 @@ By default the ignore list lives in MongoDB using PyMongo and one document per r
 
 To avoid MongoDB entirely, set `"ignore_list": {"file": "ignore.json"}` in `settings`. The file is one JSON object `{"repo_name": ["word", ...]}`, resolved relative to the config file (absolute and `~` paths also work), created on first save, with sorted, deduplicated lists so it can be committed and reviewed in PRs. `pymongo` is not needed in this mode.
 
-For both scanning and saving, `ABO_MONGO_URI` overrides `settings.MONGODB_URI` when explicitly set. If absent, config is used. An empty or whitespace-only override raises a configuration error; it never falls back. URI, database and collection must be nonempty strings. Credentials are not printed in configuration errors.
+For both scanning and saving, `ABO_MONGO_URI` overrides `settings.MONGODB_URI` when explicitly set. If absent, config is used. An empty or whitespace-only override raises a configuration error; it never falls back. URI, database and collection must be nonempty strings. Credentials are not printed in configuration errors, and MongoDB connection failures are reported with the URI and `user:password` redacted.
 
 Default JSONL/CSV output omits approved words. To audit or remove an existing approval:
 

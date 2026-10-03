@@ -7,19 +7,24 @@ Usage:
   python alas.py --repo "Golang Driver Docs"   # single repo by display name
   python alas.py --ai                          # AI review of borderline tokens
   python alas.py --parallel                    # process repos concurrently
+  python alas.py --fail-above 0.8              # CI gate: exit 1 if any non-ignored candidate has confidence >= 0.8
+  python alas.py --fail-above 0.8 --quiet      # ...and print only those: repo<TAB>word<TAB>confidence<TAB>file:line
   python alas.py --verbose                     # per-stage token counts
   python alas.py --log run.log                 # debug log: stage timings, raw AI responses
   python alas.py --train labels.jsonl          # train classifier from labeled JSONL
   python alas.py --config ~/abo.json           # config elsewhere (or set ABO_CONFIG)
 """
 import argparse
+import contextlib
+import io
 import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from config import default_config_path, load_config, resolve_repo_dir
+from config import ConfigError, check_repo_dir, default_config_path, load_config, resolve_repo_dir
+from ignore_list_store import IgnoreListError
 from pipeline import Pipeline
 from ai.hooks import HookRegistry
 from ai.reviewer import AIReviewer
@@ -59,6 +64,9 @@ def run_repo(
     verbose: bool,
     include_ignored: bool = False,
     config_dir: str = '',
+    config_path: str = '',
+    hits: Optional[list] = None,
+    fail_above: Optional[float] = None,
 ) -> str:
     hooks = HookRegistry()
 
@@ -87,6 +95,7 @@ def run_repo(
         effective_settings = {**settings_config, 'ai': ai_cfg}
 
     directory = resolve_repo_dir(repo_config, effective_settings, config_dir)
+    check_repo_dir(repo_config, directory, config_path)
 
     # Main pipeline (everything except formatting)
     pipeline = Pipeline(effective_settings, repo_config, modules_config, hooks=hooks)
@@ -113,6 +122,13 @@ def run_repo(
     reviewer = AIReviewer(effective_settings)
     token_dict = reviewer.run(token_dict, content_map)
 
+    if hits is not None and fail_above is not None:
+        hits.extend(
+            (repo_config['name'], token)
+            for token in token_dict.values()
+            if token.ignore != 'Y' and token.confidence >= fail_above
+        )
+
     # Format and write output
     if not include_ignored:
         token_dict = {word: token for word, token in token_dict.items() if token.ignore != 'Y'}
@@ -123,7 +139,24 @@ def run_repo(
     return formatter.run(token_dict, content_map)
 
 
-def cmd_run(args, config: Dict) -> None:
+def _hit_line(repo: str, token) -> str:
+    loc = token.locations[0] if token.locations else None
+    where = f"{loc.filename}:{loc.line}" if loc else '-'
+    return f"{repo}\t{token.text}\t{token.confidence:.2f}\t{where}"
+
+
+def cmd_run(args, config: Dict) -> int:
+    """Scans repos; returns the exit code (1 when --fail-above is met)."""
+    if not args.quiet:
+        return _scan(args, config)[0]
+    with contextlib.redirect_stdout(io.StringIO()):
+        code, hits = _scan(args, config)
+    for repo, token in sorted(hits, key=lambda h: (h[0], -h[1].confidence, h[1].text)):
+        print(_hit_line(repo, token))
+    return code
+
+
+def _scan(args, config: Dict):
     settings = config['settings']
     modules = config['modules']
 
@@ -140,6 +173,10 @@ def cmd_run(args, config: Dict) -> None:
     if not repos:
         sys.exit(f"No repository found matching '{args.repo}'")
 
+    hits: list = []
+    failed: list = []
+    fail_above = args.fail_above
+
     def process(repo_name, repo_config):
         print(f"Processing: {repo_config['name']}")
         output = run_repo(
@@ -150,6 +187,8 @@ def cmd_run(args, config: Dict) -> None:
             verbose=args.verbose,
             include_ignored=args.include_ignored,
             config_dir=config.get('config_dir', ''),
+            config_path=config.get('config_path', ''),
+            **({'hits': hits, 'fail_above': fail_above} if fail_above is not None else {}),
         )
         return repo_name, output
 
@@ -167,7 +206,11 @@ def cmd_run(args, config: Dict) -> None:
                     repo_name, output = future.result()
                     print(f"  {repo_name} -> {output}")
                 except Exception as e:
-                    print(f"  {futures[future]}: FAILED — {e}")
+                    failed.append(futures[future])
+                    print(f"  {futures[future]}: FAILED — {e}", file=sys.stderr if args.quiet else sys.stdout)
+
+    # A repo that failed to scan cannot be certified clean.
+    return (1 if hits or failed else 0) if fail_above is not None else 0, hits
 
 
 def cmd_train(args, config: Dict) -> None:
@@ -176,6 +219,16 @@ def cmd_train(args, config: Dict) -> None:
     model_path = settings.get('training', {}).get('model_path', 'models/classifier.pkl')
     min_samples = settings.get('training', {}).get('min_training_samples', 20)
     train(args.train, model_path, min_samples)
+
+
+def _unit_float(text: str) -> float:
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a number")
+    if not 0.0 <= value <= 1.0:
+        raise argparse.ArgumentTypeError(f"{text} is outside 0 to 1")
+    return value
 
 
 def main() -> None:
@@ -211,6 +264,15 @@ def main() -> None:
         help='Include approved words for auditing or reversing ignore decisions.'
     )
     parser.add_argument(
+        '--fail-above', metavar='X', type=_unit_float,
+        help='Exit 1 if any non-ignored candidate has confidence >= X (0 to 1). Output files are still written.'
+    )
+    parser.add_argument(
+        '--quiet', action='store_true',
+        help='With --fail-above: print only the qualifying candidates '
+             '(repo, word, confidence, file:line; tab-separated), one per line.'
+    )
+    parser.add_argument(
         '--verbose', action='store_true',
         help='Print per-stage token counts.'
     )
@@ -220,18 +282,28 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    config = load_config(args.config)
+    if args.quiet and args.fail_above is None:
+        parser.error('--quiet requires --fail-above')
+    try:
+        config = load_config(args.config)
+    except ConfigError as error:
+        sys.exit(str(error))
 
     log_file = args.log or config['settings'].get('log_file')
     handler = setup_logging(log_file) if log_file else None
+    exit_code = 0
     try:
         if args.train:
             cmd_train(args, config)
         else:
-            cmd_run(args, config)
+            exit_code = cmd_run(args, config)
+    except (ConfigError, IgnoreListError) as error:
+        sys.exit(str(error))
     finally:
         if handler:
             teardown_logging(handler)
+    if exit_code:
+        sys.exit(exit_code)
 
 
 if __name__ == '__main__':

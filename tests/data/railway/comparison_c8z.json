@@ -53,9 +53,9 @@
       }
     },
     "possessive_fix": {
-      "candidates": 1740,
-      "sample_precision": 0.1568627450980392,
-      "sample_candidates": 51,
+      "candidates": 2247,
+      "sample_precision": 0.1702127659574468,
+      "sample_candidates": 47,
       "full_top_10": {
         "candidates": 10,
         "true_positives": 1,
@@ -79,7 +79,7 @@
       }
     },
     "possessive_fix_plus_ignore_list": {
-      "candidates": 1702,
+      "candidates": 2210,
       "sample_precision": 0.6153846153846154,
       "sample_candidates": 13,
       "full_top_10": {
@@ -105,7 +105,7 @@
       }
     }
   },
-  "ignored_words": 38,
+  "ignored_words": 37,
   "limitation": "Labeled sample is purposive and the ignore list was built from it, so sample precision gain from ignoring is by construction. Full top-10 words newly surfaced were labeled in this pass (labels_c8z.jsonl). Candidates tie at confidence 0.85 and rank alphabetically, so full-top-10 precision reflects ranking ties; full-corpus precision is not measured.",
   "acceptance_passed": true
 }
