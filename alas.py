@@ -23,7 +23,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional
 
-from config import default_config_path, load_config, resolve_repo_dir
+from config import ConfigError, check_repo_dir, default_config_path, load_config, resolve_repo_dir
 from pipeline import Pipeline
 from ai.hooks import HookRegistry
 from ai.reviewer import AIReviewer
@@ -63,6 +63,7 @@ def run_repo(
     verbose: bool,
     include_ignored: bool = False,
     config_dir: str = '',
+    config_path: str = '',
     hits: Optional[list] = None,
     fail_above: Optional[float] = None,
 ) -> str:
@@ -93,6 +94,7 @@ def run_repo(
         effective_settings = {**settings_config, 'ai': ai_cfg}
 
     directory = resolve_repo_dir(repo_config, effective_settings, config_dir)
+    check_repo_dir(repo_config, directory, config_path)
 
     # Main pipeline (everything except formatting)
     pipeline = Pipeline(effective_settings, repo_config, modules_config, hooks=hooks)
@@ -184,6 +186,7 @@ def _scan(args, config: Dict):
             verbose=args.verbose,
             include_ignored=args.include_ignored,
             config_dir=config.get('config_dir', ''),
+            config_path=config.get('config_path', ''),
             **({'hits': hits, 'fail_above': fail_above} if fail_above is not None else {}),
         )
         return repo_name, output
@@ -280,7 +283,10 @@ def main() -> None:
     args = parser.parse_args()
     if args.quiet and args.fail_above is None:
         parser.error('--quiet requires --fail-above')
-    config = load_config(args.config)
+    try:
+        config = load_config(args.config)
+    except ConfigError as error:
+        sys.exit(str(error))
 
     log_file = args.log or config['settings'].get('log_file')
     handler = setup_logging(log_file) if log_file else None
@@ -290,6 +296,8 @@ def main() -> None:
             cmd_train(args, config)
         else:
             exit_code = cmd_run(args, config)
+    except ConfigError as error:
+        sys.exit(str(error))
     finally:
         if handler:
             teardown_logging(handler)

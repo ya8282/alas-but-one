@@ -6,14 +6,25 @@ from typing import Any, Dict
 DEFAULT_CONFIG = 'config.json'
 
 
+class ConfigError(Exception):
+    """A user-fixable config problem; the message is shown without a traceback."""
+
+
 def default_config_path() -> str:
     return os.environ.get('ABO_CONFIG', DEFAULT_CONFIG)
 
 
 def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
     """Loads JSON config and records its directory so relative repo paths resolve against it."""
-    with open(path) as f:
-        config = json.load(f)
+    try:
+        with open(path) as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        raise ConfigError(
+            f"Config file {os.path.abspath(path)} not found. Create it (see Setup in the README), "
+            "or set ABO_CONFIG to the path of an existing one (alas.py also accepts --config PATH)."
+        ) from None
+    config['config_path'] = os.path.abspath(path)
     config['config_dir'] = os.path.dirname(os.path.abspath(path))
     ignore_list = config.get('settings', {}).get('ignore_list')
     if isinstance(ignore_list, dict) and isinstance(ignore_list.get('file'), str):
@@ -46,3 +57,13 @@ def resolve_repo_dir(repo_config: Dict[str, Any], settings: Dict[str, Any], conf
             "(or legacy repo_base_full_path + relative_path)"
         )
     return os.path.normpath(os.path.join(base, source_dir))
+
+
+def check_repo_dir(repo_config: Dict[str, Any], directory: str, config_path: str) -> None:
+    if os.path.isdir(directory):
+        return
+    key = '"path"' if 'path' in repo_config else '"relative_path" and settings "repo_base_full_path"'
+    raise ConfigError(
+        f"Repository {repo_config.get('name', '?')}: directory {directory} does not exist. "
+        f"Check {key} in {config_path or 'the config file'}."
+    )

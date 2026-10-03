@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -577,6 +578,46 @@ class RegressionTests(unittest.TestCase):
                     with self.assertRaises(SystemExit):
                         alas.main()
                     load.assert_called_once_with(path)
+
+class ConfigErrorMessageTests(unittest.TestCase):
+    MISSING = 'Config file {} not found. Create it (see Setup in the README), or set ABO_CONFIG to the path of an existing one (alas.py also accepts --config PATH).'
+
+    def _cli(self, *args, script='alas.py', cwd=None, env_extra=None):
+        import subprocess
+        root = str(Path(__file__).resolve().parent.parent)
+        env = {k: v for k, v in os.environ.items() if k != 'ABO_CONFIG'}
+        env.update(env_extra or {})
+        if cwd:
+            script = os.path.join(root, script)
+            env['PYTHONPATH'] = root
+        return subprocess.run([sys.executable, script, *args], cwd=cwd or root, env=env, capture_output=True, text=True)
+
+    def test_invalid_directory_names_repo_directory_and_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cfg = os.path.join(directory, 'c.json')
+            Path(cfg).write_text(json.dumps({'settings': {}, 'modules': {}, 'repositories': {
+                'r': {'name': 'My Docs', 'path': 'nope'}}}))
+            result = self._cli('--config', cfg)
+            expected = f'Repository My Docs: directory {os.path.join(directory, "nope")} does not exist. Check "path" in {cfg}.'
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), expected)
+            self.assertNotIn('Traceback', result.stdout)
+
+    def test_missing_config_file_names_absolute_path_and_fix(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            result = self._cli('--config', 'absent.json', cwd=directory)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), self.MISSING.format(os.path.join(directory, 'absent.json')))
+
+    def test_save_ignore_list_missing_config_exits_with_message(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            Path(directory, 'out.jsonl').write_text('')
+            cfg = os.path.join(directory, 'absent.json')
+            result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory, env_extra={'ABO_CONFIG': cfg})
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), self.MISSING.format(cfg))
 
 class FailAboveTests(unittest.TestCase):
     def _run(self, directory, *flags, ignored=()):
