@@ -18,7 +18,7 @@
     },
 
     "training": {
-      "model_path": "models/classifier.pkl",
+      "model_path": "models/classifier.json",
       "min_training_samples": 20
     }
   },

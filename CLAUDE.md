@@ -83,7 +83,7 @@ Scores are 0.0–1.0 (higher = more likely a real typo):
 1. Run the tool to generate `<repo>.jsonl`
 2. Open the file and set `"label"` field: `"true_positive"` or `"false_positive"`
 3. Run `alas --train <repo>.jsonl` to fit a logistic regression classifier
-4. Subsequent runs use `models/classifier.pkl` to override heuristic confidence scores
+4. Subsequent runs use `models/classifier.json` to override heuristic confidence scores
 5. Re-label and re-train as the model improves
 
 Features used: `is_misspelled`, `spell_confidence`, `edit_distance_norm`,

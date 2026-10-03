@@ -163,6 +163,42 @@ class RegressionTests(unittest.TestCase):
             confidence, suggestion = compute_confidence('internationalizationn', True, checker)
             self.assertEqual((confidence, suggestion is not None), (0.51, True))
 
+    def test_json_model_matches_sklearn_and_pkl_refused(self):
+        try:
+            import numpy as np
+            from sklearn.linear_model import LogisticRegression
+            from sklearn.pipeline import make_pipeline
+            from sklearn.preprocessing import StandardScaler
+        except ImportError:
+            self.skipTest('scikit-learn not installed')
+        from alas_but_one.training.features import extract
+        from alas_but_one.training.predictor import MLPredictor
+        from alas_but_one.training.trainer import load_labeled_jsonl, train
+        rows = [
+            {'word': w, 'misspelled': m, 'confidence': c, 'label': label,
+             'locations': [{'file': 'a.rst', 'line': 1}]}
+            for w, m, c, label in [('teh', True, .9, 'true_positive'), ('recieve', True, .8, 'true_positive'),
+                               ('API', False, .1, 'false_positive'), ('kubectl', True, .3, 'false_positive')] * 3
+        ]
+        checker = Mock()
+        checker.correction.return_value = None
+        with tempfile.TemporaryDirectory() as directory, patch('alas_but_one.training.features._get_checker', return_value=checker):
+            labels = Path(directory) / 'l.jsonl'
+            labels.write_text('\n'.join(json.dumps(r) for r in rows))
+            out = str(Path(directory) / 'm.json')
+            with redirect_stdout(io.StringIO()):
+                self.assertTrue(train(str(labels), out, min_samples=4))
+            X, y = load_labeled_jsonl(str(labels))
+            ref = make_pipeline(StandardScaler(), LogisticRegression(max_iter=500)).fit(np.array(X), np.array(y))
+            predictor = MLPredictor(out)
+            predictor._load()
+            token = Token(text='teh', repo='r', locations=[TokenLocation(filename='a.rst', line=1)],
+                          misspelled=True, confidence=.9)
+            self.assertAlmostEqual(predictor.predict_confidence(token),
+                                   ref.predict_proba(np.array([extract(token)]))[0][1], places=3)
+            with self.assertRaisesRegex(ValueError, r'--train'):
+                MLPredictor(str(Path(directory) / 'classifier.pkl'))
+
     def test_casing_exports_training_round_trip_and_legacy(self):
         from alas_but_one.training.features import extract
         from alas_but_one.training.trainer import load_labeled_jsonl

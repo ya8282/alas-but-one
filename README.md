@@ -144,7 +144,7 @@ Then train:
 alas --train output.jsonl
 ```
 
-This fits a logistic regression classifier on your labeled examples and saves it to `models/classifier.pkl`. Subsequent runs automatically use it to replace heuristic scores with ML-predicted probabilities. Re-label and re-train as the model improves.
+This fits a logistic regression classifier on your labeled examples and saves it to `models/classifier.json`. Subsequent runs automatically use it to replace heuristic scores with ML-predicted probabilities. Re-label and re-train as the model improves.
 
 The seven-feature vector keeps the `is_all_upper` slot but now stores the same uppercase ratio used by scoring. **Retrain existing classifiers** to learn the repaired feature; models are not deleted or retrained automatically. New JSONL exports preserve the count when loaded for training. Legacy records infer casing from an uppercase `word` and its location count; already-lowercased records use zero because lost casing cannot be recovered.
 

@@ -162,8 +162,11 @@ def _scan(args, config: Dict):
     settings = config['settings']
     modules = config.get('modules', {})
 
-    model_path = settings.get('training', {}).get('model_path', 'models/classifier.pkl')
-    predictor = MLPredictor(model_path)
+    model_path = settings.get('training', {}).get('model_path', 'models/classifier.json')
+    try:
+        predictor = MLPredictor(model_path)
+    except ValueError as e:
+        sys.exit(str(e))
     if predictor.available:
         print(f"ML model loaded from {model_path}")
 
@@ -220,9 +223,12 @@ def _scan(args, config: Dict):
 def cmd_train(args, config: Dict) -> None:
     from alas_but_one.training.trainer import train
     settings = config['settings']
-    model_path = settings.get('training', {}).get('model_path', 'models/classifier.pkl')
+    model_path = settings.get('training', {}).get('model_path', 'models/classifier.json')
     min_samples = settings.get('training', {}).get('min_training_samples', 20)
-    train(args.train, model_path, min_samples)
+    try:
+        train(args.train, model_path, min_samples)
+    except ValueError as e:
+        sys.exit(str(e))
 
 
 def _unit_float(text: str) -> float:

@@ -80,7 +80,7 @@ def main():
         # scoring, review filtering and formatter run through the CLI pipeline.
         with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set(manifest['approved_terms'])):
             path = run_repo('evaluation', repo, settings, config.get('modules', {}), 'jsonl', False,
-                            MLPredictor(str(Path(directory) / 'absent.pkl')), False)
+                            MLPredictor(str(Path(directory) / 'absent.json')), False)
         after = read_jsonl(path)
         for record in after:
             for location in record['locations']:
