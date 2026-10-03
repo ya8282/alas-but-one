@@ -15,6 +15,7 @@ Uses ABO_MONGO_URI when set, otherwise settings.MONGODB_URI from the config file
 import collections
 import csv
 import json
+import os
 import re
 import sys
 from config import ConfigError, default_config_path, load_config
@@ -72,12 +73,15 @@ def main():
 
     input_file = sys.argv[1]
 
-    if input_file.endswith('.jsonl'):
-        update_dict = _load_jsonl(input_file)
-    elif input_file.endswith('.csv'):
-        update_dict = _load_csv(input_file)
-    else:
-        sys.exit("Input file must be .jsonl or .csv")
+    try:
+        if input_file.endswith('.jsonl'):
+            update_dict = _load_jsonl(input_file)
+        elif input_file.endswith('.csv'):
+            update_dict = _load_csv(input_file)
+        else:
+            sys.exit("Input file must be .jsonl or .csv")
+    except FileNotFoundError:
+        sys.exit(f"Input file {os.path.abspath(input_file)} not found.")
 
     try:
         settings = load_config(default_config_path())['settings']

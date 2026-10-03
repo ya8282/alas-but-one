@@ -33,7 +33,10 @@ def _mongo(uri: str, operation):
     """Runs operation(client), closing the client; re-raises Mongo failures without credentials."""
     client = None
     try:
-        client = MongoClient(uri)
+        try:
+            client = MongoClient(uri)
+        except ValueError as error:  # pymongo raises plain ValueError for malformed URIs
+            raise IgnoreListError(f'MongoDB URI is invalid: {redact(str(error), uri)}') from None
         return operation(client)
     except Exception as error:
         if type(error).__module__.split('.')[0] != 'pymongo':

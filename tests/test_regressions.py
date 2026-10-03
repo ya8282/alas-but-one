@@ -652,6 +652,29 @@ class ConfigErrorMessageTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertEqual(result.stderr.strip(), self.MISSING.format(cfg))
 
+    def test_malformed_config_json_names_file_and_position(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cfg = os.path.join(directory, 'c.json')
+            Path(cfg).write_text('{\n  "settings": }')
+            result = self._cli('--config', cfg)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), f'Config file {cfg} is not valid JSON: line 2 column 15: Expecting value.')
+
+    def test_save_ignore_list_missing_input_exits_with_message(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            result = self._cli('nope.jsonl', script='save_ignore_list.py', cwd=directory)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stderr.strip(), f'Input file {os.path.join(directory, "nope.jsonl")} not found.')
+
+    def test_malformed_mongo_uri_is_a_clean_error_without_credentials(self):
+        from ignore_list_store import IgnoreListError, _mongo
+        with self.assertRaises(IgnoreListError) as caught:
+            _mongo('mongodb://SECRETUSER:SECRETPW@host:12x/db', lambda client: None)
+        self.assertIn('MongoDB URI is invalid: Port contains non-digit characters', str(caught.exception))
+        self.assertNotIn('SECRETPW', str(caught.exception))
+
+
 class FailAboveTests(unittest.TestCase):
     def _run(self, directory, *flags, ignored=()):
         from contextlib import chdir
