@@ -191,13 +191,98 @@ class RegressionTests(unittest.TestCase):
             X, y = load_labeled_jsonl(str(labels))
             ref = make_pipeline(StandardScaler(), LogisticRegression(max_iter=500)).fit(np.array(X), np.array(y))
             predictor = MLPredictor(out)
-            predictor._load()
+            self.assertIsNone(predictor.problem)
             token = Token(text='teh', repo='r', locations=[TokenLocation(filename='a.rst', line=1)],
                           misspelled=True, confidence=.9)
             self.assertAlmostEqual(predictor.predict_confidence(token),
                                    ref.predict_proba(np.array([extract(token)]))[0][1], places=3)
             with self.assertRaisesRegex(ValueError, r'--train'):
                 MLPredictor(str(Path(directory) / 'classifier.pkl'))
+
+    def test_bad_model_warns_once_and_falls_back(self):
+        from alas_but_one.training.features import FEATURE_NAMES
+        from alas_but_one.training.predictor import MLPredictor
+        n = len(FEATURE_NAMES)
+        token = Token(text='teh', repo='r', locations=[TokenLocation(filename='a.rst', line=1)],
+                      misspelled=True, confidence=.9)
+        with tempfile.TemporaryDirectory() as directory:
+            model = Path(directory) / 'classifier.json'
+            model.write_text('{"intercept": 0}')
+            bad = MLPredictor(str(model))
+            self.assertFalse(bad.available)
+            self.assertRegex(bad.problem, r'classifier\.json.*--train')
+            self.assertEqual(bad.apply({'teh': token})['teh'].confidence, .9)
+            ok, z, o = [0] * n, [0] * (n - 1), [1] * n
+            for label, bad_model in [
+                    ('short', {'intercept': 0, 'weights': z, 'mean': ok, 'scale': o}),
+                    ('zero scale', {'intercept': 0, 'weights': ok, 'mean': ok, 'scale': ok}),
+                    ('string weights', {'intercept': 0, 'weights': 'a' * n, 'mean': ok, 'scale': o}),
+                    ('null scale', {'intercept': 0, 'weights': ok, 'mean': ok, 'scale': [None] * n}),
+                    ('bool intercept', {'intercept': True, 'weights': ok, 'mean': ok, 'scale': o}),
+                    ('reordered', {'intercept': 0, 'weights': ok, 'mean': ok, 'scale': o, 'features': ['x']})]:
+                model.write_text(json.dumps(bad_model))
+                self.assertRegex(MLPredictor(str(model)).problem or '', r'classifier\.json.*--train', label)
+            model.write_text('[' * 100000)
+            self.assertRegex(MLPredictor(str(model)).problem or '', r'--train')
+            model.write_text(json.dumps({'intercept': 0, 'weights': [0] * n, 'mean': [0] * n, 'scale': [1] * n}))
+            good = MLPredictor(str(model))
+            self.assertIsNone(good.problem)
+            self.assertTrue(good.available)
+            self.assertEqual(good.predict_confidence(token), .5)
+            model.unlink()
+            (Path(directory) / 'classifier.pkl').write_bytes(b'x')
+            old = MLPredictor(str(model))
+            self.assertRegex(old.problem, r'classifier\.pkl.*--train')
+            self.assertFalse(old.available)
+            (Path(directory) / 'classifier.pkl').unlink()
+            self.assertIsNone(MLPredictor(str(model)).problem)
+
+    def test_huge_int_model_is_a_problem_not_a_crash(self):
+        from alas_but_one.training.features import FEATURE_NAMES
+        from alas_but_one.training.predictor import MLPredictor
+        n = len(FEATURE_NAMES)
+        huge = '9' * 400
+        z, o = [0] * n, [1] * n
+        with tempfile.TemporaryDirectory() as directory:
+            model = Path(directory) / 'classifier.json'
+            w = ', '.join([huge] + ['0'] * (n - 1))
+            for label, text in [
+                    ('intercept', '{"intercept": %s, "weights": %s, "mean": %s, "scale": %s}' % (huge, z, z, o)),
+                    ('weights', '{"intercept": 0, "weights": [%s], "mean": %s, "scale": %s}' % (w, z, o))]:
+                model.write_text(text)
+                predictor = MLPredictor(str(model))
+                self.assertRegex(predictor.problem or '', r'classifier\.json.*--train', label)
+                self.assertFalse(predictor.available)
+
+    def test_nonfinite_score_keeps_heuristic_confidence(self):
+        from alas_but_one.training.features import FEATURE_NAMES
+        from alas_but_one.training.predictor import MLPredictor
+        n = len(FEATURE_NAMES)
+        token = Token(text='teh', repo='r', locations=[TokenLocation(filename='a.rst', line=1)],
+                      misspelled=True, confidence=.9)
+        with tempfile.TemporaryDirectory() as directory:
+            model = Path(directory) / 'classifier.json'
+            model.write_text(json.dumps({'intercept': 0, 'weights': [1e308, -1e308] + [0] * (n - 2),
+                                         'mean': [0] * n, 'scale': [1e-300] * n}))
+            predictor = MLPredictor(str(model))
+            self.assertIsNone(predictor.problem)
+            self.assertEqual(predictor.apply({'teh': token})['teh'].confidence, .9)
+
+    def test_scan_warns_once_on_bad_model_and_still_succeeds(self):
+        import alas_but_one.cli as alas
+        with tempfile.TemporaryDirectory() as directory:
+            model = Path(directory) / 'classifier.json'
+            model.write_text('{"intercept": 0}')
+            config = {'settings': {'training': {'model_path': str(model)}}, 'modules': {},
+                      'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
+            out, err = io.StringIO(), io.StringIO()
+            with patch('sys.argv', ['alas.py']), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), \
+                    patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.run_repo', return_value='out'), \
+                    redirect_stdout(out), redirect_stderr(err):
+                alas.main()
+            self.assertEqual(err.getvalue().count('Warning: ML model'), 1)
+            self.assertIn('classifier.json', err.getvalue())
+            self.assertNotIn('ML model loaded', out.getvalue())
 
     def test_casing_exports_training_round_trip_and_legacy(self):
         from alas_but_one.training.features import extract
@@ -376,7 +461,7 @@ class RegressionTests(unittest.TestCase):
             for output_format in ['jsonl','csv']:
                 for include_ignored in [False, True]:
                     with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value={'mongodb'}):
-                        path = run_repo('test', repo, settings, config.get('modules', {}), output_format, False, Mock(available=False), False, include_ignored=include_ignored)
+                        path = run_repo('test', repo, settings, config.get('modules', {}), output_format, False, Mock(available=False, problem=None), False, include_ignored=include_ignored)
                     if output_format == 'jsonl':
                         rows = [json.loads(line) for line in Path(path).read_text().splitlines()]
                         decisions = _load_jsonl(path)
@@ -414,7 +499,7 @@ class RegressionTests(unittest.TestCase):
             for verbose in [True, False]:
                 buffer = io.StringIO()
                 with redirect_stdout(buffer), patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set()):
-                    run_repo('test', repo, settings, config.get('modules', {}), 'jsonl', False, Mock(available=False), verbose)
+                    run_repo('test', repo, settings, config.get('modules', {}), 'jsonl', False, Mock(available=False, problem=None), verbose)
                 outputs[verbose] = buffer.getvalue()
             for stage in ['collector','reader','tokenizer','max_occurrence_matcher','spell_checker','ignore_list_matcher']:
                 self.assertRegex(outputs[True], rf'    {stage}: \d+\.\d\ds')
@@ -438,7 +523,7 @@ class RegressionTests(unittest.TestCase):
         import alas_but_one.cli as alas
         config = {'settings':{},'modules':{},'repositories':{'a':{'name':'A'},'b':{'name':'B'}}}
         for flags, expected in [([],False), (['--include-ignored'],True), (['--include-ignored','--parallel'],True)]:
-            with patch('sys.argv', ['alas.py']+flags), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', return_value='output') as run:
+            with patch('sys.argv', ['alas.py']+flags), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)), patch('alas_but_one.cli.run_repo', return_value='output') as run:
                 alas.main()
                 self.assertEqual(run.call_count, 2)
                 for call in run.call_args_list:
@@ -646,7 +731,7 @@ class RegressionTests(unittest.TestCase):
             config = load_config(path)
             self.assertEqual(config['config_dir'], directory)
             for argv, env in [(['alas.py', '--config', path], {}), (['alas.py'], {'ABO_CONFIG': path})]:
-                with patch('sys.argv', argv), patch.dict(os.environ, env, clear=True), patch('alas_but_one.cli.load_config', return_value=config) as load, patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)):
+                with patch('sys.argv', argv), patch.dict(os.environ, env, clear=True), patch('alas_but_one.cli.load_config', return_value=config) as load, patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)):
                     with self.assertRaises(SystemExit):
                         alas.main()
                     load.assert_called_once_with(path)
@@ -812,7 +897,7 @@ class FailAboveTests(unittest.TestCase):
         out, err = io.StringIO(), io.StringIO()
         code = 0
         with chdir(directory), redirect_stdout(out), redirect_stderr(err), patch('sys.argv', ['alas.py', *flags]), \
-                patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
+                patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)), \
                 patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set(ignored)):
             try:
                 alas.main()
@@ -866,7 +951,7 @@ class FailAboveTests(unittest.TestCase):
             return 'out'
         for flags in [(), ('--parallel',)]:
             with patch('sys.argv', ['alas.py', '--fail-above', '0.8', *flags]), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), \
-                    patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
+                    patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                     redirect_stdout(io.StringIO()):
                 with self.assertRaises(SystemExit) as raised:
                     alas.main()
@@ -881,7 +966,7 @@ class FailAboveTests(unittest.TestCase):
             return 'out'
         out, err = io.StringIO(), io.StringIO()
         with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet', '--parallel']), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), \
-                patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
+                patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                 redirect_stdout(out), redirect_stderr(err):
             with self.assertRaises(SystemExit) as raised:
                 alas.main()
@@ -900,7 +985,7 @@ class FailAboveTests(unittest.TestCase):
                 return 'out'
             out, err = io.StringIO(), io.StringIO()
             with patch('sys.argv', ['alas.py', *flags]), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), \
-                    patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
+                    patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                     redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas_but_one.cli', 'DEBUG'):
                 with self.assertRaises(SystemExit) as raised:
                     alas.main()
@@ -919,7 +1004,7 @@ class FailAboveTests(unittest.TestCase):
             raise ValueError('boom')
         out, err = io.StringIO(), io.StringIO()
         with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet']), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), \
-                patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
+                patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                 redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas_but_one.cli', 'DEBUG'):
             with self.assertRaises(SystemExit) as raised:
                 alas.main()
@@ -940,7 +1025,7 @@ class LogFileTests(unittest.TestCase):
             'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
         buffer = io.StringIO()
         with chdir(directory), redirect_stdout(buffer), patch('sys.argv', ['alas.py', *flags]), \
-                patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
+                patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)), \
                 patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set()):
             alas.main()
         self.assertEqual(logging.getLogger().handlers, self._handlers)
@@ -1214,7 +1299,7 @@ class MongoCredentialLeakTests(unittest.TestCase):
                     env = {} if uri_in_config else {'ABO_MONGO_URI': self.URI}
                     out, err = io.StringIO(), io.StringIO()
                     with patch('sys.argv', ['alas.py', '--config', config, '--log', log]), patch.dict(os.environ, env, clear=True), \
-                            patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
+                            patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)), \
                             patch('alas_but_one.ignore_list_store.MongoClient', self._client(params, error)), \
                             redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as caught:
                         alas.main()

@@ -24,7 +24,7 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from alas_but_one.config import DEFAULT_CONFIG, ConfigError, check_repo_dir, init_config, load_config, resolve_config_path, resolve_repo_dir
 from alas_but_one.ignore_list_store import IgnoreListError
@@ -171,7 +171,9 @@ def _scan(args, config: Dict):
         predictor = MLPredictor(model_path)
     except ValueError as e:
         sys.exit(str(e))
-    if predictor.available:
+    if predictor.problem:
+        print(f"Warning: {predictor.problem}", file=sys.stderr)
+    elif predictor.available:
         print(f"ML model loaded from {model_path}")
 
     repos = {
