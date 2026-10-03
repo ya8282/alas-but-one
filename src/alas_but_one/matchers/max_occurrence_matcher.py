@@ -8,7 +8,7 @@ class MaxOccurrenceMatcherTask(BaseTask):
         filtered_token_dict = {}
 
         for word, token in validated_tokens.items():
-            if len(token.locations) <= self.settings_config['maxOccurrences']:
+            if len(token.locations) <= self.settings_config.get('maxOccurrences', 1):
                 filtered_token_dict[word] = token
 
         return self.validate_output(filtered_token_dict)

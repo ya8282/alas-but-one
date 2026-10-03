@@ -19,6 +19,7 @@ pip install -e '.[ai,ml]'        # from a clone, for development
 | Command | Purpose |
 |---|---|
 | `alas --init` | write an example config.json (to `--config PATH`, default `./config.json`); never overwrites |
+| `alas /path/to/docs` | scan one dir, no config or MongoDB needed (config settings used if found; not with `--repo`/`--train`/`--init`) |
 | `alas` | run all repos, JSONL output (default) |
 | `alas --format csv` | CSV output |
 | `alas --output-dir out` | outputs to ./out (default: settings.output_dir, config-relative) |

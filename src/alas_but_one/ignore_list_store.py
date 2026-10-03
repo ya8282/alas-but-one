@@ -120,6 +120,10 @@ def load_words(repo: str, settings: dict) -> set[str]:
     path = _ignore_file(settings)
     if path:
         return _repo_words(_read_file(path), repo, path)
+    section = settings.get('ignore_list')
+    if ('ABO_MONGO_URI' not in os.environ and settings.get('MONGODB_URI') is None
+            and not (isinstance(section, dict) and ('database' in section or 'collection' in section))):
+        return set()  # no ignore list configured: nothing is ignored, no database is contacted
     _require_pymongo()
     uri, database, collection = resolve_ignore_list_settings(settings)
     result = _mongo(uri, lambda client: client[database][collection].find_one({'repo_name': repo}))

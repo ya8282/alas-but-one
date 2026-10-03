@@ -36,6 +36,14 @@ pip install -e '.[ai,ml]'
 
 The install provides the `alas` and `alas-save-ignore` commands. The `ai` extra (`anthropic`) is only needed for `--ai` and the `ml` extra (`scikit-learn`, `numpy`) for `--train`. The core requirements are `pyspellchecker` and `pymongo`. Prefer pipx or a clean virtual environment: the unrelated package named `spellchecker` breaks imports of `pyspellchecker` in shared environments.
 
+## Quickstart
+
+```bash
+alas /path/to/docs
+```
+
+This scans that one directory with built-in defaults and writes `<directory name>.jsonl` to the current directory. It needs no config file and no MongoDB (with no ignore list configured, nothing is ignored). If a config is found, its settings are used but only the given directory is scanned. It cannot be combined with `--repo`, `--train` or `--init`.
+
 ## Setup
 
 Run `alas --init` to write an example `config.json` in the current directory (or at `--config PATH`; it never overwrites a file), then edit its settings and repositories. The example uses a JSON ignore list file, so no MongoDB is needed to start; switch `ignore_list` to `database` and `collection` to use MongoDB:
@@ -78,6 +86,7 @@ Markdown masking removes fenced/indented code, inline backtick code, initial YAM
 ## Usage
 
 ```bash
+alas /path/to/docs                 # scan one directory, no config or MongoDB needed
 alas                               # run all repos, JSONL output (default)
 alas --format csv                  # CSV output instead
 alas --output-dir out              # write outputs to ./out
@@ -244,14 +253,14 @@ The user-supplied Railway snapshot contains 411 `.md` files (2,632,562 bytes). B
 |---|---:|---:|
 | All emitted candidates | 2,541 | 1,819 |
 | Candidates in labeled review sample | 61 | 50 |
-| False positives in labeled sample | 54 | 43 |
-| Precision across labeled sample | 7/61 (11.5%) | 7/50 (14.0%) |
-| Full-queue top-10 precision | 0/10 | 0/10 |
-| Known natural prose typos retained | 7/7 | 7/7 |
+| False positives in labeled sample | 53 | 42 |
+| Precision across labeled sample | 8/61 (13.1%) | 8/50 (16.0%) |
+| Full-queue top-10 precision | 0/10 | 1/10 |
+| Known natural prose typos retained | 8/8 | 8/8 |
 
-The 70-word labeled sample is the union of each run's top 40 candidates plus seven naturally occurring typos found during source review. It is a **purposive review sample**, not a random estimate of corpus-wide precision. All seven confirmed typo locations match source lines. No typos were inserted into these documents. Candidate-count reduction is not a count of eliminated false positives across the entire corpus, which was not fully labeled.
+The 70-word labeled sample is the union of each run's top 40 candidates plus eight naturally occurring typos found during source review. It is a **purposive review sample**, not a random estimate of corpus-wide precision. All eight confirmed typo locations match source lines. No typos were inserted into these documents. Candidate-count reduction is not a count of eliminated false positives across the entire corpus, which was not fully labeled.
 
-`tests/data/railway/` retains complete baseline/after exports, explicit labels with source contexts, corpus/artifact hashes, invocation details and metrics. `typos.json` lists the seven confirmed words, corrections and exact source locations. A final uncached scan through the real collector, reader, tokenizer, occurrence matcher, scorer and formatter reproduced the after export byte-for-byte. The saved-artifact audit verifies corpus identity, labels and locations:
+`tests/data/railway/` retains complete baseline/after exports, explicit labels with source contexts, corpus/artifact hashes, invocation details and metrics. `typos.json` lists the eight confirmed words, corrections and exact source locations. A final uncached scan through the real collector, reader, tokenizer, occurrence matcher, scorer and formatter reproduced the after export byte-for-byte. The saved-artifact audit verifies corpus identity, labels and locations:
 
 ```bash
 python3 tests/evaluate_real_corpus.py --output /tmp/railway-comparison.json
@@ -264,7 +273,9 @@ python3 tests/scan_real_corpus.py --corpus /path/to/railway_docs_markdown --base
 python3 tests/scan_real_corpus.py --corpus /path/to/railway_docs_markdown --output /tmp/railway-after.jsonl
 ```
 
-Ranking still surfaces legitimate technical terms before real typos; the zero-precision top ten makes that limitation visible. Further queue improvement and a broader labeled precision estimate belong in Beads rather than being inferred from this sample.
+`tests/data/plaid/` holds a Plaid scan (288 `.md` files, `maxOccurrences: 1`) captured with `scan_real_corpus.py`; no script consumes it. Reproduce it with `python3 tests/scan_real_corpus.py --corpus /path/to/plaid_docs_markdown/docs --repo-name Plaid --output tests/data/plaid/candidates.jsonl`; `manifest.json` records the per-file hashes. A rerun matches the saved words, locations and confidence; spelling suggestions that tie may differ between runs.
+
+Ranking still surfaces legitimate technical terms before real typos; a top ten with only one confirmed typo makes that limitation visible. Further queue improvement and a broader labeled precision estimate belong in Beads rather than being inferred from this sample.
 
 ## Known limitations
 

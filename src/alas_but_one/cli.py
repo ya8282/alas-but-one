@@ -2,6 +2,7 @@
 alas-but-one — atomic typo candidate finder for documentation repositories.
 
 Usage:
+  alas /path/to/docs                 # scan one directory; needs no config or MongoDB
   alas                               # run all repos, JSONL output
   alas --format csv                  # CSV output
   alas --repo "Golang Driver Docs"   # single repo by display name
@@ -26,7 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 from importlib.metadata import PackageNotFoundError, version
 from typing import Dict, Optional
 
-from alas_but_one.config import DEFAULT_CONFIG, ConfigError, check_repo_dir, init_config, load_config, resolve_config_path, resolve_repo_dir
+from alas_but_one.config import DEFAULT_CONFIG, ConfigError, adhoc_config, check_repo_dir, init_config, load_config, resolve_config_path, resolve_repo_dir
 from alas_but_one.ignore_list_store import IgnoreListError
 from alas_but_one.pipeline import Pipeline
 from alas_but_one.ai.hooks import HookRegistry
@@ -259,6 +260,10 @@ def main() -> None:
         description='Find atomic typo candidates in documentation repositories.'
     )
     parser.add_argument(
+        'path', nargs='?',
+        help='Scan only this directory (keyed by its name), using the found config settings, else built-in defaults.'
+    )
+    parser.add_argument(
         '--version', action='version', version=f'%(prog)s {_version()}'
     )
     parser.add_argument(
@@ -318,6 +323,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.quiet and args.fail_above is None:
         parser.error('--quiet requires --fail-above')
+    if args.path and (args.repo or args.train or args.init):
+        parser.error('a directory to scan cannot be combined with --repo, --train or --init; drop one of them')
     if args.init:
         try:
             print(f'Wrote example config to {init_config(args.config or DEFAULT_CONFIG)}. Put MongoDB credentials in ABO_MONGO_URI, never in the config file.')
@@ -325,7 +332,15 @@ def main() -> None:
             sys.exit(str(error))
         return
     try:
-        config = load_config(resolve_config_path(args.config))
+        try:
+            config_path = resolve_config_path(args.config)
+        except ConfigError:
+            if not args.path:
+                raise
+            config_path = None  # nothing on the search path: scan with built-in defaults
+        config = load_config(config_path) if config_path else None
+        if args.path:
+            config = adhoc_config(args.path, config)
     except ConfigError as error:
         sys.exit(str(error))
 
