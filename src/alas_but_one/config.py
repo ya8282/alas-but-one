@@ -76,6 +76,8 @@ def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
             f"Config file {os.path.abspath(path)} is not valid JSON: "
             f"line {error.lineno} column {error.colno}: {error.msg}."
         ) from None
+    if not isinstance(config, dict):
+        raise ConfigError(f"Config file {os.path.abspath(path)} must contain a JSON object at the top level. Edit the config file.")
     config['config_path'] = os.path.abspath(path)
     config['config_dir'] = os.path.dirname(os.path.abspath(path))
     cfg_path = config['config_path']
@@ -88,13 +90,19 @@ def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
 
     config_dir = config['config_dir']
     settings = config.setdefault('settings', {})
+    if not isinstance(settings, dict):
+        raise ConfigError(f"settings in {cfg_path} must be an object. Edit that key in the config file.")
     ignore_list = settings.get('ignore_list')
-    if isinstance(ignore_list, dict):
+    if ignore_list is not None and not isinstance(ignore_list, dict):
+        raise ConfigError(f"settings.ignore_list in {cfg_path} must be an object. Edit that key in the config file.")
+    if ignore_list:
         file = require(ignore_list, 'file', 'settings.ignore_list.file')
+        if file == '':
+            raise ConfigError(f"settings.ignore_list.file in {cfg_path} is empty. Set a file path, or remove the key.")
         if file is not None:
             ignore_list['file'] = config_relative(file, config_dir)
-    log_file = settings.get('log_file')
-    if isinstance(log_file, str):
+    log_file = require(settings, 'log_file', 'settings.log_file')
+    if log_file:  # '' means no log file, as in cli
         settings['log_file'] = config_relative(log_file, config_dir)
     training = settings.setdefault('training', {})
     if not isinstance(training, dict):

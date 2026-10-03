@@ -142,12 +142,34 @@ class SettingsTypeTests(unittest.TestCase):
             ({'training': {'model_path': 3}}, 'settings.training.model_path'),
             ({'output_dir': 3}, 'settings.output_dir'),
             ({'ignore_list': {'file': 3}}, 'settings.ignore_list.file'),
+            ({'ignore_list': {'file': ''}}, 'settings.ignore_list.file'),
+            ({'ignore_list': []}, 'settings.ignore_list'),
+            ({'log_file': 3}, 'settings.log_file'),
         ]
         for settings, key in cases:
             with self.subTest(key=key):
                 with self.assertRaises(ConfigError) as ctx:
                     self.load(settings)
                 self.assertIn(key, str(ctx.exception))
+
+    def test_non_dict_settings_and_top_level(self):
+        for body, key in (({'settings': []}, 'settings'), ([], 'top level')):
+            with self.subTest(key=key):
+                import json
+                tmp = tempfile.TemporaryDirectory()
+                self.addCleanup(tmp.cleanup)
+                path = os.path.join(tmp.name, 'config.json')
+                with open(path, 'w') as f:
+                    json.dump(body, f)
+                with self.assertRaises(ConfigError) as ctx:
+                    load_config(path)
+                self.assertIn(key, str(ctx.exception))
+
+    def test_empty_strings_fall_back(self):
+        config = self.load({'training': {'model_path': ''}, 'output_dir': '', 'log_file': ''})
+        self.assertTrue(config['settings']['training']['model_path'].endswith('models/classifier.json'))
+        self.assertEqual(config['settings']['output_dir'], config['config_dir'])
+        self.assertEqual(config['settings']['log_file'], '')
 
 
 if __name__ == '__main__':
