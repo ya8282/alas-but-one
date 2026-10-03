@@ -244,14 +244,14 @@ The user-supplied Railway snapshot contains 411 `.md` files (2,632,562 bytes). B
 |---|---:|---:|
 | All emitted candidates | 2,541 | 1,819 |
 | Candidates in labeled review sample | 61 | 50 |
-| False positives in labeled sample | 54 | 43 |
-| Precision across labeled sample | 7/61 (11.5%) | 7/50 (14.0%) |
-| Full-queue top-10 precision | 0/10 | 0/10 |
-| Known natural prose typos retained | 7/7 | 7/7 |
+| False positives in labeled sample | 53 | 42 |
+| Precision across labeled sample | 8/61 (13.1%) | 8/50 (16.0%) |
+| Full-queue top-10 precision | 0/10 | 1/10 |
+| Known natural prose typos retained | 8/8 | 8/8 |
 
-The 70-word labeled sample is the union of each run's top 40 candidates plus seven naturally occurring typos found during source review. It is a **purposive review sample**, not a random estimate of corpus-wide precision. All seven confirmed typo locations match source lines. No typos were inserted into these documents. Candidate-count reduction is not a count of eliminated false positives across the entire corpus, which was not fully labeled.
+The 70-word labeled sample is the union of each run's top 40 candidates plus eight naturally occurring typos found during source review. It is a **purposive review sample**, not a random estimate of corpus-wide precision. All eight confirmed typo locations match source lines. No typos were inserted into these documents. Candidate-count reduction is not a count of eliminated false positives across the entire corpus, which was not fully labeled.
 
-`tests/data/railway/` retains complete baseline/after exports, explicit labels with source contexts, corpus/artifact hashes, invocation details and metrics. `typos.json` lists the seven confirmed words, corrections and exact source locations. A final uncached scan through the real collector, reader, tokenizer, occurrence matcher, scorer and formatter reproduced the after export byte-for-byte. The saved-artifact audit verifies corpus identity, labels and locations:
+`tests/data/railway/` retains complete baseline/after exports, explicit labels with source contexts, corpus/artifact hashes, invocation details and metrics. `typos.json` lists the eight confirmed words, corrections and exact source locations. A final uncached scan through the real collector, reader, tokenizer, occurrence matcher, scorer and formatter reproduced the after export byte-for-byte. The saved-artifact audit verifies corpus identity, labels and locations:
 
 ```bash
 python3 tests/evaluate_real_corpus.py --output /tmp/railway-comparison.json
@@ -264,7 +264,7 @@ python3 tests/scan_real_corpus.py --corpus /path/to/railway_docs_markdown --base
 python3 tests/scan_real_corpus.py --corpus /path/to/railway_docs_markdown --output /tmp/railway-after.jsonl
 ```
 
-Ranking still surfaces legitimate technical terms before real typos; the zero-precision top ten makes that limitation visible. Further queue improvement and a broader labeled precision estimate belong in Beads rather than being inferred from this sample.
+Ranking still surfaces legitimate technical terms before real typos; a top ten with only one confirmed typo makes that limitation visible. Further queue improvement and a broader labeled precision estimate belong in Beads rather than being inferred from this sample.
 
 ## Known limitations
 

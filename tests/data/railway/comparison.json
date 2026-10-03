@@ -8,9 +8,9 @@
   "review_sample": {
     "baseline": {
       "actionable_candidates": 61,
-      "true_positives": 7,
-      "false_positives": 54,
-      "precision": 0.11475409836065574,
+      "true_positives": 8,
+      "false_positives": 53,
+      "precision": 0.13114754098360656,
       "top_10": {
         "candidates": 10,
         "true_positives": 0,
@@ -19,13 +19,13 @@
     },
     "after": {
       "actionable_candidates": 50,
-      "true_positives": 7,
-      "false_positives": 43,
-      "precision": 0.14,
+      "true_positives": 8,
+      "false_positives": 42,
+      "precision": 0.16,
       "top_10": {
         "candidates": 10,
-        "true_positives": 0,
-        "precision": 0.0
+        "true_positives": 1,
+        "precision": 0.1
       }
     },
     "labeled_words": 70
@@ -38,13 +38,13 @@
     },
     "after": {
       "candidates": 10,
-      "true_positives": 0,
-      "precision": 0.0
+      "true_positives": 1,
+      "precision": 0.1
     }
   },
   "known_prose_typos": {
-    "retained": 7,
-    "total": 7,
+    "retained": 8,
+    "total": 8,
     "retention": 1.0
   },
   "full_corpus_precision": null,
