@@ -74,7 +74,7 @@ def main():
     with tempfile.TemporaryDirectory() as directory, chdir(directory):
         Path('evaluation.rst').write_text((DATA / 'evaluation.rst').read_text())
         settings = {**config['settings'],
-                    'maxOccurrences': manifest['maxOccurrences'], 'ai': {'enabled': False}}
+                    'maxOccurrences': manifest['maxOccurrences'], 'ai': {'enabled': False}, 'output_dir': directory}
         repo = {'name': 'offline-evaluation', 'path': directory, 'source_dir': ''}
         # Replace only the external MongoDB read. Real collection, masking,
         # scoring, review filtering and formatter run through the CLI pipeline.

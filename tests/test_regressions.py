@@ -372,7 +372,7 @@ class RegressionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, chdir(directory):
             Path('sample.txt').write_text('MongoDB retreive ordinary')
             repo = {'name':'test','relative_path':'','source_dir':''}
-            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}}
+            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}, 'output_dir':directory}
             for output_format in ['jsonl','csv']:
                 for include_ignored in [False, True]:
                     with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value={'mongodb'}):
@@ -409,7 +409,7 @@ class RegressionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, chdir(directory):
             Path('sample.txt').write_text('retreive ordinary')
             repo = {'name':'test','relative_path':'','source_dir':''}
-            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}}
+            settings = {**config['settings'], 'repo_base_full_path':directory + '/', 'ai':{'enabled':False}, 'output_dir':directory}
             outputs = {}
             for verbose in [True, False]:
                 buffer = io.StringIO()
@@ -807,7 +807,7 @@ class FailAboveTests(unittest.TestCase):
         from contextlib import chdir
         import alas_but_one.cli as alas
         base = alas.load_config()
-        config = {'settings': {**base['settings'], 'ai': {'enabled': False}}, 'modules': base.get('modules', {}), 'repositories': {
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, 'output_dir': directory}, 'modules': base.get('modules', {}), 'repositories': {
             'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
         out, err = io.StringIO(), io.StringIO()
         code = 0
@@ -834,7 +834,7 @@ class FailAboveTests(unittest.TestCase):
             self.assertGreater(score, 0.5)
             self.assertEqual(self._run(directory, '--fail-above', f'{score:.2f}')[0], 1)
             self.assertEqual(self._run(directory, '--fail-above', f'{score + 0.01:.2f}')[0], 0)
-            self.assertTrue(os.path.exists(os.path.join(directory, 'test.jsonl')))
+            self.assertTrue(os.path.exists(os.path.join(directory, 'r.jsonl')))
 
     def test_ignored_candidates_never_fail_even_with_include_ignored(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -843,7 +843,7 @@ class FailAboveTests(unittest.TestCase):
                 code, out, _ = self._run(directory, '--fail-above', '0', '--quiet', *flags, ignored={'retreive'})
                 self.assertEqual(out.count('retreive'), 0)
                 self.assertEqual(self._run(directory, '--fail-above', '0.5', *flags, ignored={'retreive'})[0], 0)
-            self.assertIn('retreive', Path(directory, 'test.jsonl').read_text())
+            self.assertIn('retreive', Path(directory, 'r.jsonl').read_text())
 
     def test_quiet_prints_only_qualifying_lines_and_requires_fail_above(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -936,7 +936,7 @@ class LogFileTests(unittest.TestCase):
         from contextlib import chdir
         import alas_but_one.cli as alas
         base = alas.load_config()
-        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, **(settings or {})}, 'modules': base.get('modules', {}), 'repositories': {
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}, 'output_dir': directory, **(settings or {})}, 'modules': base.get('modules', {}), 'repositories': {
             'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
         buffer = io.StringIO()
         with chdir(directory), redirect_stdout(buffer), patch('sys.argv', ['alas.py', *flags]), \

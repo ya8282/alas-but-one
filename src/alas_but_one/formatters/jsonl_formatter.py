@@ -1,7 +1,7 @@
 import json
 from typing import Dict
 
-from alas_but_one.tasks.base_task import BaseTask
+from alas_but_one.tasks.base_task import BaseTask, output_path
 from alas_but_one.models.token import Token
 from alas_but_one.ai.reviewer import get_source_line
 
@@ -9,7 +9,7 @@ from alas_but_one.ai.reviewer import get_source_line
 class JsonlFormatterTask(BaseTask):
     """
     Writes one JSON record per token, sorted by confidence descending.
-    Output file: <repo_name>.jsonl
+    Output file: <repository key>.jsonl in settings.output_dir
 
     Each record includes all fields needed for review and ML training:
     word, repo, locations, num_occurrences, misspelled, confidence,
@@ -19,8 +19,7 @@ class JsonlFormatterTask(BaseTask):
 
     def run(self, tokens: Dict[str, Token], content_map=None) -> str:
         validated = self.validate_input(tokens)
-        repo_name = self.repo_config['name']
-        output_file = f"{repo_name}.jsonl"
+        output_file = output_path(self.settings_config, self.repo_config, 'jsonl')
 
         sorted_tokens = sorted(
             validated.values(), key=lambda t: (-t.confidence, t.text)

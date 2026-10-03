@@ -56,6 +56,7 @@ Markdown masking removes fenced/indented code, inline backtick code, initial YAM
 ```bash
 alas                               # run all repos, JSONL output (default)
 alas --format csv                  # CSV output instead
+alas --output-dir out              # write outputs to ./out
 alas --repo "My Docs"              # single repo by display name
 alas --ai                          # AI review of borderline tokens
 alas --parallel                    # process repos concurrently
@@ -80,7 +81,7 @@ alas --fail-above 0.8 --quiet || echo "typo candidates found"
 
 ## Output
 
-Each run produces `<repo name>.jsonl` (or `.csv` with `--format csv`), one record per candidate, sorted by `confidence` descending:
+Each run produces `<repository key>.jsonl` (the key under `repositories`, not the display name; `.csv` with `--format csv`) in `settings.output_dir` (default: the config file's directory; relative values resolve against the config file, like `path`). `--output-dir DIR` overrides it and is relative to the current directory, one record per candidate, sorted by `confidence` descending:
 
 ```jsonc
 {
@@ -144,7 +145,7 @@ Then train:
 alas --train output.jsonl
 ```
 
-This fits a logistic regression classifier on your labeled examples and saves it to `models/classifier.json`. Subsequent runs automatically use it to replace heuristic scores with ML-predicted probabilities. Re-label and re-train as the model improves.
+This fits a logistic regression classifier on your labeled examples and saves it to `settings.training.model_path` (default `models/classifier.json`, relative to the config file). Subsequent runs automatically use it to replace heuristic scores with ML-predicted probabilities. Re-label and re-train as the model improves.
 
 The seven-feature vector keeps the `is_all_upper` slot but now stores the same uppercase ratio used by scoring. **Retrain existing classifiers** to learn the repaired feature; models are not deleted or retrained automatically. New JSONL exports preserve the count when loaded for training. Legacy records infer casing from an uppercase `word` and its location count; already-lowercased records use zero because lost casing cannot be recovered.
 
@@ -160,7 +161,7 @@ Default JSONL/CSV output omits approved words. To audit or remove an existing ap
 
 ```bash
 alas --include-ignored             # add --format csv if needed
-alas-save-ignore "My Docs.jsonl"  # or reviewed CSV
+alas-save-ignore my-docs.jsonl  # or reviewed CSV
 ```
 
 In JSONL, set `"ignore": true` to add a word and `false` to remove it. In CSV, use `Y` and `N`. Audit exports restore approved terms with their flags intact, so setting them to false/N and saving reverses the decision. Repeated additions are idempotent, and repository decisions remain isolated. MongoDB (or the file backend below) must be available for normal scans and saving; the offline checks below mock that boundary.

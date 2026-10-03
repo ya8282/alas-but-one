@@ -14,6 +14,7 @@ real typos or legitimate technical terms.
 ```bash
 alas                          # run, JSONL output (default)
 alas --format csv             # CSV output
+alas --output-dir out         # outputs to ./out (default: settings.output_dir, config-relative)
 alas --repo "Golang Driver Docs"  # single repo
 alas --ai                     # AI review of borderline tokens
 alas --verbose                # per-stage token counts
@@ -46,8 +47,8 @@ collector → reader → tokenizer → max_occurrence_matcher
 | ignore_list_matcher | `matchers/ignore_list_matcher.py` | sets `token.ignore` from ignore list store |
 | ml_predictor | `training/predictor.py` | overrides `token.confidence` if trained model exists |
 | ai_reviewer | `ai/reviewer.py` | sends borderline tokens to Claude; updates confidence + suggestion |
-| jsonl_formatter | `formatters/jsonl_formatter.py` | writes `<repo>.jsonl` sorted by confidence desc |
-| csv_formatter | `formatters/csv_formatter.py` | writes `<repo>.csv` (backward compat) |
+| jsonl_formatter | `formatters/jsonl_formatter.py` | writes `<key>.jsonl` (in `settings.output_dir`) sorted by confidence desc |
+| csv_formatter | `formatters/csv_formatter.py` | writes `<key>.csv` (backward compat) |
 
 ### Key types
 
@@ -80,10 +81,10 @@ Scores are 0.0–1.0 (higher = more likely a real typo):
 
 ### ML training loop
 
-1. Run the tool to generate `<repo>.jsonl`
+1. Run the tool to generate `<key>.jsonl`
 2. Open the file and set `"label"` field: `"true_positive"` or `"false_positive"`
-3. Run `alas --train <repo>.jsonl` to fit a logistic regression classifier
-4. Subsequent runs use `models/classifier.json` to override heuristic confidence scores
+3. Run `alas --train <key>.jsonl` to fit a logistic regression classifier
+4. Subsequent runs use `models/classifier.json` (config-relative `training.model_path`) to override heuristic confidence scores
 5. Re-label and re-train as the model improves
 
 Features used: `is_misspelled`, `spell_confidence`, `edit_distance_norm`,
