@@ -304,7 +304,7 @@ def main() -> None:
         parser.error('--quiet requires --fail-above')
     if args.init:
         try:
-            print(f'Wrote example config to {init_config(args.config or DEFAULT_CONFIG)}')
+            print(f'Wrote example config to {init_config(args.config or DEFAULT_CONFIG)}. Put MongoDB credentials in ABO_MONGO_URI, never in the config file.')
         except ConfigError as error:
             sys.exit(str(error))
         return

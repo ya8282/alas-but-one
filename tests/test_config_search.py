@@ -90,6 +90,7 @@ class InitTests(unittest.TestCase):
         code, out, _ = self._main('--config', path, '--init')
         self.assertEqual(code, 0)
         self.assertIn(path, out)
+        self.assertIn('ABO_MONGO_URI', out)
         config = load_config(path)
         self.assertNotIn('@', config['settings']['MONGODB_URI'])
         self.assertNotIn('@', open(path).read())
