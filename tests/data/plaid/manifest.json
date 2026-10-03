@@ -1464,8 +1464,8 @@
     "review_scope": "review.jsonl is the misspelled subset of candidates.jsonl in candidate order; no labels. One confirmed typo (typos.json), partial vocabulary review. Full queue precision is unmeasured."
   },
   "artifacts": {
-    "candidates.jsonl": "014cea9ad855b9fd49be18642ea84364f6f65dbc90c363931cfe7f96c299502c",
-    "review.jsonl": "861d02a1d93689c2d9531225200e2a42566e89047d06b3e4d1774b0e2b365442",
+    "candidates.jsonl": "0aa494174cc6892cef45766f6918322fcc408ec0abc3aa7f341c074385e6bef1",
+    "review.jsonl": "a7baf20ae7be2cf02cb182d9fd10d1f4306340f01b60293d09762bc4a80be8d2",
     "typos.json": "af4767fcd9a09cea9130f270372e16cf9a6271f9657d5c9179b71d3de8270751"
   },
   "command": "python3 tests/scan_real_corpus.py --corpus <corpus_root> --repo-name Plaid --output tests/data/plaid/candidates.jsonl"

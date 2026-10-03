@@ -152,6 +152,31 @@ class SettingsTypeTests(unittest.TestCase):
                     self.load(settings)
                 self.assertIn(key, str(ctx.exception))
 
+    def test_max_occurrences_default_is_one_for_every_stage(self):
+        from alas_but_one.ai.reviewer import AIReviewer
+        from alas_but_one.matchers.max_occurrence_matcher import MaxOccurrenceMatcherTask
+        from alas_but_one.matchers.spell_checker import SpellCheckerTask
+        from alas_but_one.models.token import Token
+        settings = self.load({})['settings']
+
+        def tok(word, n):
+            t = Token(word, 'r', [object()] * n)
+            t.part_occurrences = {word: n}
+            return t
+        tokens = {'zzqxv': tok('zzqxv', 1), 'zzqxw': tok('zzqxw', 2)}
+        kept = MaxOccurrenceMatcherTask(settings, {}).run(dict(tokens))
+        flagged = SpellCheckerTask(settings, {}).run(dict(tokens))
+        self.assertEqual(list(kept), ['zzqxv'])
+        self.assertEqual([w for w, t in flagged.items() if t.misspelled], ['zzqxv'])
+        self.assertEqual(AIReviewer(settings).max_occ, 1)
+
+    def test_max_occurrences_type_checked(self):
+        for bad in (0, -1, True, 1.5, '1'):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ConfigError) as ctx:
+                    self.load({'maxOccurrences': bad})
+                self.assertIn('settings.maxOccurrences', str(ctx.exception))
+
     def test_non_dict_settings_and_top_level(self):
         for body, key in (({'settings': []}, 'settings'), ([], 'top level')):
             with self.subTest(key=key):
@@ -170,6 +195,43 @@ class SettingsTypeTests(unittest.TestCase):
         self.assertTrue(config['settings']['training']['model_path'].endswith('models/classifier.json'))
         self.assertEqual(config['settings']['output_dir'], config['config_dir'])
         self.assertEqual(config['settings']['log_file'], '')
+
+
+class RepositoriesSectionTests(unittest.TestCase):
+    def write(self, body):
+        import json
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = os.path.join(tmp.name, 'config.json')
+        with open(path, 'w') as f:
+            json.dump(body, f)
+        return path
+
+    def test_malformed_repositories_raise_config_error_naming_key_and_file(self):
+        cases = [
+            ({}, 'repositories'),
+            ({'repositories': []}, 'repositories'),
+            ({'repositories': {}}, 'repositories'),
+            ({'repositories': ['x']}, 'repositories'),
+            ({'repositories': {'a': 'x'}}, 'repositories.a'),
+            ({'repositories': {'a': {'path': '.'}}}, 'repositories.a.name'),
+            ({'repositories': {'a': {'name': 3, 'path': '.'}}}, 'repositories.a.name'),
+            ({'repositories': {'a': {'name': 'a', 'path': 3}}}, 'repositories.a.path'),
+        ]
+        for body, key in cases:
+            with self.subTest(body=body):
+                path = self.write(body)
+                with self.assertRaises(ConfigError) as ctx:
+                    load_config(path, require_repositories=True)
+                self.assertIn(key, str(ctx.exception))
+                self.assertIn(path, str(ctx.exception))
+
+    def test_repositories_not_checked_unless_required(self):
+        self.assertEqual(load_config(self.write({'repositories': []}))['repositories'], [])
+
+    def test_legacy_entry_without_path_is_accepted(self):
+        path = self.write({'repositories': {'a': {'name': 'a', 'relative_path': 'a'}}})
+        self.assertIn('a', load_config(path, require_repositories=True)['repositories'])
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Dict, List, Optional
 
+from alas_but_one.config import DEFAULT_MAX_OCCURRENCES
 from alas_but_one.models.token import Token
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ class AIReviewer:
         self.max_conf = ai_cfg.get('review_confidence_max', 0.7)
         self.batch_size = ai_cfg.get('batch_size', 20)
         self.send_context = ai_cfg.get('send_context', True)
-        self.max_occ = settings_config.get('maxOccurrences', 1)
+        self.max_occ = settings_config.get('maxOccurrences', DEFAULT_MAX_OCCURRENCES)
         self._client = None
 
     def _get_client(self):

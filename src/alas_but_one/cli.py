@@ -338,7 +338,7 @@ def main() -> None:
             if not args.path:
                 raise
             config_path = None  # nothing on the search path: scan with built-in defaults
-        config = load_config(config_path) if config_path else None
+        config = load_config(config_path, require_repositories=not args.path and not args.train) if config_path else None
         if args.path:
             config = adhoc_config(args.path, config)
     except ConfigError as error:
