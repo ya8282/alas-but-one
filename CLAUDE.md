@@ -109,7 +109,7 @@ Requires `ANTHROPIC_API_KEY` environment variable.
 
 | Variable | Required for |
 |---|---|
-| `ABO_CONFIG` | config file location (default `./config.json`; `--config` overrides) |
+| `ABO_CONFIG` | config file location (overrides `./config.json` and `$XDG_CONFIG_HOME/alas-but-one/config.json`; `--config` overrides it; `alas --init` writes the example) |
 | `ABO_MONGO_URI` | ignore list (overrides config MONGODB_URI); put credentials here, never in config.json |
 | `ANTHROPIC_API_KEY` | `--ai` flag |
 

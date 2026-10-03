@@ -16,7 +16,7 @@ The install provides the `alas` and `alas-save-ignore` commands. The `ai` extra 
 
 ## Setup
 
-Edit the settings and repositories in `config.json`:
+Run `alas --init` to write an example `config.json` in the current directory (or at `--config PATH`; it never overwrites a file), then edit its settings and repositories. The example uses a JSON ignore list file, so no MongoDB is needed to start; switch `ignore_list` to `database` and `collection` to use MongoDB:
 
 ```json
 {
@@ -39,7 +39,7 @@ Edit the settings and repositories in `config.json`:
 
 Each repository names the directory to walk with `path`: absolute, `~`-prefixed, or relative to the config file's directory. `source_dir` is optional and is joined onto `path`. The older `settings.repo_base_full_path` + `relative_path` + `source_dir` form still works when `path` is absent.
 
-The config file is `./config.json` by default. Point both `alas` and `alas-save-ignore` elsewhere with `ABO_CONFIG=/path/to/config.json`, or pass `--config PATH` to `alas`.
+Both `alas` and `alas-save-ignore` look for the config in this order: `--config PATH` (`alas` only), `ABO_CONFIG`, `./config.json`, then `$XDG_CONFIG_HOME/alas-but-one/config.json` (default `~/.config/alas-but-one/config.json`).
 
 `--log FILE` (or `settings.log_file`; `--log` wins, relative `log_file` resolves against the config file's directory) writes a DEBUG log of each stage's item count and elapsed time and each AI batch's raw response or failure. Stdout is unchanged; with neither set, no log file is created.
 

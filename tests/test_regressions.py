@@ -402,7 +402,7 @@ class RegressionTests(unittest.TestCase):
         import alas_but_one.cli as alas
         config = {'settings':{},'modules':{},'repositories':{'a':{'name':'A'},'b':{'name':'B'}}}
         for flags, expected in [([],False), (['--include-ignored'],True), (['--include-ignored','--parallel'],True)]:
-            with patch('sys.argv', ['alas.py']+flags), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', return_value='output') as run:
+            with patch('sys.argv', ['alas.py']+flags), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', return_value='output') as run:
                 alas.main()
                 self.assertEqual(run.call_count, 2)
                 for call in run.call_args_list:
@@ -635,7 +635,7 @@ class TaskFactoryTests(unittest.TestCase):
 
 
 class ConfigErrorMessageTests(unittest.TestCase):
-    MISSING = 'Config file {} not found. Create it (see Setup in the README), or set ABO_CONFIG to the path of an existing one (alas also accepts --config PATH).'
+    MISSING = 'Config file {} not found. Create it with `alas --init`, or point ABO_CONFIG or --config PATH at an existing one.'
 
     def _cli(self, *args, script='alas_but_one.cli', cwd=None, env_extra=None):
         import subprocess
@@ -776,7 +776,7 @@ class FailAboveTests(unittest.TestCase):
         out, err = io.StringIO(), io.StringIO()
         code = 0
         with chdir(directory), redirect_stdout(out), redirect_stderr(err), patch('sys.argv', ['alas.py', *flags]), \
-                patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
+                patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
                 patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set(ignored)):
             try:
                 alas.main()
@@ -829,7 +829,7 @@ class FailAboveTests(unittest.TestCase):
                 hits.append(('B', Token('x', 'B', [TokenLocation('f', 1)], confidence=0.9)))
             return 'out'
         for flags in [(), ('--parallel',)]:
-            with patch('sys.argv', ['alas.py', '--fail-above', '0.8', *flags]), patch('alas_but_one.cli.load_config', return_value=config), \
+            with patch('sys.argv', ['alas.py', '--fail-above', '0.8', *flags]), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), \
                     patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                     redirect_stdout(io.StringIO()):
                 with self.assertRaises(SystemExit) as raised:
@@ -844,7 +844,7 @@ class FailAboveTests(unittest.TestCase):
                 raise ValueError('Invalid directory: nope')
             return 'out'
         out, err = io.StringIO(), io.StringIO()
-        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet', '--parallel']), patch('alas_but_one.cli.load_config', return_value=config), \
+        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet', '--parallel']), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), \
                 patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                 redirect_stdout(out), redirect_stderr(err):
             with self.assertRaises(SystemExit) as raised:
@@ -863,7 +863,7 @@ class FailAboveTests(unittest.TestCase):
                     raise ValueError('Invalid directory: nope')
                 return 'out'
             out, err = io.StringIO(), io.StringIO()
-            with patch('sys.argv', ['alas.py', *flags]), patch('alas_but_one.cli.load_config', return_value=config), \
+            with patch('sys.argv', ['alas.py', *flags]), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), \
                     patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                     redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas_but_one.cli', 'DEBUG'):
                 with self.assertRaises(SystemExit) as raised:
@@ -882,7 +882,7 @@ class FailAboveTests(unittest.TestCase):
                 return 'out'
             raise ValueError('boom')
         out, err = io.StringIO(), io.StringIO()
-        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet']), patch('alas_but_one.cli.load_config', return_value=config), \
+        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet']), patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), \
                 patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), patch('alas_but_one.cli.run_repo', side_effect=fake), \
                 redirect_stdout(out), redirect_stderr(err), self.assertLogs('alas_but_one.cli', 'DEBUG'):
             with self.assertRaises(SystemExit) as raised:
@@ -904,7 +904,7 @@ class LogFileTests(unittest.TestCase):
             'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
         buffer = io.StringIO()
         with chdir(directory), redirect_stdout(buffer), patch('sys.argv', ['alas.py', *flags]), \
-                patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
+                patch('alas_but_one.cli.resolve_config_path', return_value='config.json'), patch('alas_but_one.cli.load_config', return_value=config), patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False)), \
                 patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set()):
             alas.main()
         self.assertEqual(logging.getLogger().handlers, self._handlers)

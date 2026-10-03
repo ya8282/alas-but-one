@@ -25,3 +25,6 @@ alas-save-ignore = "alas_but_one.save_ignore_list:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+alas_but_one = ["config.example.json"]

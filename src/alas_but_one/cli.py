@@ -13,6 +13,7 @@ Usage:
   alas --log run.log                 # debug log: stage timings, raw AI responses
   alas --train labels.jsonl          # train classifier from labeled JSONL
   alas --config ~/abo.json           # config elsewhere (or set ABO_CONFIG)
+  alas --init                        # write an example config.json here and exit
 """
 import argparse
 import contextlib
@@ -24,7 +25,7 @@ from concurrent.futures import ThreadPoolExecutor
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Dict, Optional
 
-from alas_but_one.config import ConfigError, check_repo_dir, default_config_path, load_config, resolve_repo_dir
+from alas_but_one.config import DEFAULT_CONFIG, ConfigError, check_repo_dir, init_config, load_config, resolve_config_path, resolve_repo_dir
 from alas_but_one.ignore_list_store import IgnoreListError
 from alas_but_one.pipeline import Pipeline
 from alas_but_one.ai.hooks import HookRegistry
@@ -249,8 +250,12 @@ def main() -> None:
         '--version', action='version', version=f'%(prog)s {_version()}'
     )
     parser.add_argument(
-        '--config', metavar='PATH', default=default_config_path(),
-        help='Config file (default: $ABO_CONFIG or ./config.json).'
+        '--config', metavar='PATH',
+        help='Config file (default: $ABO_CONFIG, ./config.json, then $XDG_CONFIG_HOME/alas-but-one/config.json).'
+    )
+    parser.add_argument(
+        '--init', action='store_true',
+        help='Write an example config to --config PATH (default ./config.json) and exit; never overwrites.'
     )
     parser.add_argument(
         '--train', metavar='JSONL',
@@ -297,8 +302,14 @@ def main() -> None:
     args = parser.parse_args()
     if args.quiet and args.fail_above is None:
         parser.error('--quiet requires --fail-above')
+    if args.init:
+        try:
+            print(f'Wrote example config to {init_config(args.config or DEFAULT_CONFIG)}')
+        except ConfigError as error:
+            sys.exit(str(error))
+        return
     try:
-        config = load_config(args.config)
+        config = load_config(resolve_config_path(args.config))
     except ConfigError as error:
         sys.exit(str(error))
 

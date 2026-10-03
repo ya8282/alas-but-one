@@ -1,0 +1,17 @@
+{
+  "settings": {
+    "maxOccurrences": 1,
+    "MONGODB_URI": "mongodb://localhost:27017",
+    "ignore_list": {
+      "file": "ignore_words.json"
+    }
+  },
+  "repositories": {
+    "my-project": {
+      "name": "My Project Docs",
+      "text_format": "rst",
+      "path": "~/docs/my-project",
+      "source_dir": "source"
+    }
+  }
+}

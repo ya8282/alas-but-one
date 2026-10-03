@@ -10,7 +10,7 @@ For JSONL: set "ignore": true/false on each record.
 For CSV:   set the 'ignore' column to 'Y'/'N'.
 
 Uses ABO_MONGO_URI when set, otherwise settings.MONGODB_URI from the config file
-($ABO_CONFIG or ./config.json).
+(found as for alas: $ABO_CONFIG, ./config.json, then $XDG_CONFIG_HOME/alas-but-one/config.json).
 """
 import collections
 import csv
@@ -18,7 +18,7 @@ import json
 import os
 import re
 import sys
-from alas_but_one.config import ConfigError, default_config_path, load_config
+from alas_but_one.config import ConfigError, load_config, resolve_config_path
 from alas_but_one.ignore_list_store import apply_decisions
 
 
@@ -101,7 +101,7 @@ def main():
         sys.exit(str(error))
 
     try:
-        settings = load_config(default_config_path())['settings']
+        settings = load_config(resolve_config_path())['settings']
         _apply_updates(update_dict, settings)
     except (ValueError, ConfigError) as error:
         sys.exit(str(error))
