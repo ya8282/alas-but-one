@@ -2076,5 +2076,5 @@
   "capture_note": "Initial capture reused real pyspellchecker corrections from a preliminary scan of the same corpus; new/uncached corrections used the actual library. Final after run is independently recomputed without that cache. No source edits or added typo seeds.",
   "baseline.jsonl_sha256": "2a543e8edb8a7ec2889cefa024e619d0efc3a0d9aa0e170e67b88cf938e16da2",
   "after.jsonl_sha256": "03bc0b9e1532eef2b26c8acc80bed7e9aa310899ff042b22836362f469ab6fdc",
-  "labels.jsonl_sha256": "b06b1ce6482355f6514538fd06fc793da8243e890669298ad645d9aae653e40e"
+  "labels.jsonl_sha256": "ab2d6426c7106f651d10066eff5af40564612fa64ad522a134ea07182a966821"
 }
