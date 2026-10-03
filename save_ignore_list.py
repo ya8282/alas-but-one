@@ -22,14 +22,20 @@ from config import ConfigError, default_config_path, load_config
 from ignore_list_store import apply_decisions
 
 
+def _clean_word(word, path: str, number: int) -> str:
+    if not isinstance(word, str):
+        raise ValueError(f"Input file {os.path.abspath(path)} line {number}: word must be text.")
+    return word.lower()
+
+
 def _load_csv(path: str) -> dict:
     """Returns {repo_name: {word: ignore_bool}}"""
     update_dict = collections.defaultdict(dict)
-    with open(path, encoding='utf-8') as f:
+    with open(path, encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         for row in reader:
             ignore_val = row.get('ignore', '')
-            word = row.get('word', '').lower()
+            word = _clean_word(row.get('word'), path, reader.line_num)
             repo = row.get('repo', '')
             if not word or not repo:
                 continue
@@ -43,7 +49,7 @@ def _load_csv(path: str) -> dict:
 def _load_jsonl(path: str) -> dict:
     """Returns {repo_name: {word: ignore_bool}}"""
     update_dict = collections.defaultdict(dict)
-    with open(path, encoding='utf-8') as f:
+    with open(path, encoding='utf-8-sig') as f:
         for number, line in enumerate(f, 1):
             line = line.strip()
             if not line:
@@ -54,7 +60,7 @@ def _load_jsonl(path: str) -> dict:
                 raise ValueError(f"Input file {os.path.abspath(path)} line {number} is not valid JSON.") from None
             if not isinstance(record, dict):
                 raise ValueError(f"Input file {os.path.abspath(path)} line {number} is not a JSON object.")
-            word = record.get('word', '').lower()
+            word = _clean_word(record.get('word'), path, number)
             repo = record.get('repo', '')
             ignore = record.get('ignore')
             if not word or not repo or ignore is None:

@@ -682,6 +682,28 @@ class ConfigErrorMessageTests(unittest.TestCase):
             result = self._cli('out.jsonl', script='save_ignore_list.py', cwd=directory)
             self._assert_clean_failure(result, f'Input file {os.path.join(directory, "out.jsonl")} line 3 is not valid JSON.')
 
+    def test_save_ignore_list_non_text_word_is_a_clean_error(self):
+        cases = [
+            ('w.jsonl', '{"repo": "r", "word": "a", "ignore": true}\n{"repo": "r", "word": 1, "ignore": true}\n', 2),
+            ('m.jsonl', '{"repo": "r", "ignore": true}\n', 1),
+            ('w.csv', 'repo,word,ignore\nr,a,Y\nr\n', 3),
+        ]
+        for name, text, line in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                Path(directory, name).write_text(text)
+                result = self._cli(name, script='save_ignore_list.py', cwd=directory)
+                self._assert_clean_failure(result, f'Input file {os.path.join(os.path.realpath(directory), name)} line {line}: word must be text.')
+
+    def test_save_ignore_list_reads_bom_input(self):
+        from save_ignore_list import _load_csv, _load_jsonl
+        with tempfile.TemporaryDirectory() as directory:
+            csv_path = Path(directory, 'excel.csv')
+            csv_path.write_bytes('\ufeffrepo,word,ignore\nr,Recieve,Y\n'.encode('utf-8'))
+            jsonl_path = Path(directory, 'bom.jsonl')
+            jsonl_path.write_bytes('\ufeff{"repo": "r", "word": "Recieve", "ignore": true}\n'.encode('utf-8'))
+            self.assertEqual(_load_csv(str(csv_path)), {'r': {'recieve': True}})
+            self.assertEqual(_load_jsonl(str(jsonl_path)), {'r': {'recieve': True}})
+
     def test_save_ignore_list_non_object_jsonl_line_is_a_clean_error(self):
         with tempfile.TemporaryDirectory() as directory:
             directory = os.path.realpath(directory)
