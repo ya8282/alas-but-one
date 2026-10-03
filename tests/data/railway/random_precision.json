@@ -27,6 +27,7 @@
   },
   "uncertain_fraction": 0.013333333333333334,
   "seed": 20261002,
+  "drawn_at_commit": "734bae0",
   "candidate_sha256": "ac71a9900aeaf91103248fa5b97054bb5c795b054550ef818e656e37c90b9ed1",
   "candidate_count": 303,
   "limitations": [

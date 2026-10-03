@@ -60,7 +60,8 @@ def main():
         fixed = scan(corpus, Path(directory) / 'fixed.jsonl')
         final = scan(corpus, Path(directory) / 'final.jsonl', ignore)
         final_path = DATA / 'after_c8z.jsonl'
-        final_path.write_text(''.join(json.dumps(r) + '\n' for r in sorted(final, key=lambda r: r['word'])))
+        # suggestion is dropped: spellchecker tie-breaks make it nondeterministic between runs.
+        final_path.write_text(''.join(json.dumps({**r, 'suggestion': None}) + '\n' for r in sorted(final, key=lambda r: r['word'])))
     stages = {
         'baseline': stage_metrics(read_jsonl(DATA / 'baseline.jsonl'), labels),
         'after_previous': stage_metrics(read_jsonl(DATA / 'after.jsonl'), labels),

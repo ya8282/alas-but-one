@@ -172,7 +172,7 @@ def mask_markdown(content: str) -> str:
 class TokenizerTask(BaseTask):
     def __init__(self, settings_config, repo_config):
         super().__init__(settings_config, repo_config)
-        self.word_regex = re.compile(r'\b(?![_\-0-9])[A-Za-z0-9\']+\b')
+        self.word_regex = re.compile(r"\b(?![_\-0-9])[A-Za-z0-9']+(?:-[A-Za-z0-9']+)*\b")
         if 'text_format' in repo_config and repo_config['text_format'] not in ('rst', 'plain', 'markdown'):
             raise ValueError('text_format must be rst, markdown or plain')
 
@@ -200,6 +200,14 @@ class TokenizerTask(BaseTask):
                         token_dict[word] = Token(word, self.repo_config['name'], [TokenLocation(key, i)])
                     if surface.isupper() and len(surface) > 1:
                         token_dict[word].uppercase_occurrences += 1
+
+        # Frequent components stay trusted (maxOccurrences) once compounds are kept whole.
+        counts = {}
+        for word, token in token_dict.items():
+            for part in word.split('-'):
+                counts[part] = counts.get(part, 0) + len(token.locations)
+        for word, token in token_dict.items():
+            token.part_occurrences = {part: counts[part] for part in word.split('-')}
 
         return self.validate_output(token_dict)
 

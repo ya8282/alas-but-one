@@ -15,6 +15,7 @@ from evaluate_candidates import read_jsonl
 from evaluate_railway_ignore import DATA, scan, verify_corpus
 
 SEED = 20261002
+DRAWN_AT_COMMIT = '734bae0'
 N = 150
 Z = 1.959964
 
@@ -83,7 +84,8 @@ def main():
     if sample_path.exists():
         stored = json.loads(sample_path.read_text().splitlines()[0])
         if stored['candidate_sha256'] != digest:
-            raise ValueError('Candidate list changed since the sample was drawn; redraw and relabel')
+            raise ValueError(f'The candidate list changed since the sample was drawn at commit {DRAWN_AT_COMMIT}; '
+                             f'check out that commit to reproduce.')
     header = {'candidate_sha256': digest, 'candidate_count': len(ordered), 'seed': SEED, 'n': len(sample),
               'population': 'misspelled=true records, maxOccurrences=1, committed ignore.json, sorted by word'}
     rows = [{'word': r['word'], 'confidence': r['confidence'], 'file': r['locations'][0]['file'],
@@ -94,7 +96,7 @@ def main():
         print(f'Wrote {len(rows)} sampled words; add {labels_path.name} and rerun.')
         return
     result = report(sample, {r['word']: r for r in read_jsonl(labels_path)}, len(ordered))
-    result.update({'seed': SEED, 'candidate_sha256': digest, 'candidate_count': len(ordered), 'limitations': [
+    result.update({'drawn_at_commit': DRAWN_AT_COMMIT, 'seed': SEED, 'candidate_sha256': digest, 'candidate_count': len(ordered), 'limitations': [
         'Single corpus (Railway docs) and a single labeler; no inter-rater agreement measured.',
         'Population is the misspelled-flagged candidate list of the current code at maxOccurrences=1 with the committed ignore list; the ' + str(len(records) - len(candidates)) + ' in-dictionary records (misspelled=false, confidence <= 0.05) are still exported but rank below every flagged word and are excluded.',
         'The committed ignore list was built from earlier purposive labels, so precision is for the post-ignore queue only.',

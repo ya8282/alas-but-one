@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, Optional
 from .token_location import TokenLocation
 
 
@@ -16,6 +16,7 @@ class Token:
     ai_reviewed: bool = False
     ai_comment: Optional[str] = None
     uppercase_occurrences: int = 0
+    part_occurrences: Optional[Dict[str, int]] = None  # corpus-wide count of the word, or of each component of a hyphenated compound
 
     @property
     def uppercase_ratio(self) -> float:

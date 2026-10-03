@@ -100,6 +100,39 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(results, [0.3, 0.3])
         self.assertEqual(Token('empty', 'test', []).uppercase_ratio, 0)
 
+    def test_hyphenated_compound_is_one_token_judged_by_its_components(self):
+        from matchers.spell_checker import SpellCheckerTask
+        content = {'sample.txt': 'Act pre-emptively.\nAdd-ons and how-tos.\n\nA well-knwon trick.'}
+        tokens = TokenizerTask({}, {'name': 'test'}).run(content)
+        self.assertEqual(set(tokens), {'act', 'pre-emptively', 'add-ons', 'and', 'how-tos', 'a', 'well-knwon', 'trick'})
+        for fragment in ('emptively', 'ons', 'tos', 'knwon', 'well'):
+            self.assertNotIn(fragment, tokens)
+        tokens = SpellCheckerTask({}, {}).run(tokens)
+        self.assertEqual({w for w, t in tokens.items() if t.misspelled}, {'well-knwon'})
+        self.assertEqual([(loc.filename, loc.line) for loc in tokens['well-knwon'].locations], [('sample.txt', 4)])
+        self.assertEqual(tokens['well-knwon'].suggestion, 'well-known')
+        self.assertEqual(tokens['well-knwon'].confidence, 0.6)
+        tokens = SpellCheckerTask({}, {}).run(TokenizerTask({}, {'name': 'test'}).run({'b.txt': 'Add-ons and ons.'}))
+        self.assertFalse(tokens['add-ons'].misspelled)
+        tokens = SpellCheckerTask({}, {}).run(TokenizerTask({}, {'name': 'test'}).run({'c.txt': 'knwon-knwonly'}))
+        self.assertEqual(tokens['knwon-knwonly'].suggestion, 'known-knwonly')
+
+    def test_ignore_list_covers_compound_of_listed_component(self):
+        from matchers.ignore_list_matcher import IgnoreListTask
+        tokens = TokenizerTask({}, {'name': 'repo'}).run({'a.txt': 'graphile-worker graphile-wroker graphile'})
+        with patch('matchers.ignore_list_matcher.load_words', return_value={'graphile'}):
+            result = IgnoreListTask({}, {'name': 'repo'}).run(tokens)
+        self.assertEqual({w: t.ignore for w, t in result.items()},
+                         {'graphile-worker': 'Y', 'graphile-wroker': 'N', 'graphile': 'Y'})
+
+    def test_compound_with_frequent_component_stays_trusted(self):
+        from matchers.spell_checker import SpellCheckerTask
+        settings = {'maxOccurrences': 1}
+        content = {'a.txt': 'zzyx-alpha\nzzyx-beta\nzzyx\nqqwv-gamma'}
+        tokens = TokenizerTask(settings, {'name': 'test'}).run(content)
+        tokens = SpellCheckerTask(settings, {}).run(tokens)
+        self.assertEqual({w for w, t in tokens.items() if t.misspelled}, {'qqwv-gamma'})
+
     def test_acronym_score_interpolates_and_standalone_casing_survives(self):
         from matchers.confidence_scorer import compute_confidence
         checker = Mock()
