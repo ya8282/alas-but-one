@@ -24,6 +24,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional
 
 from config import ConfigError, check_repo_dir, default_config_path, load_config, resolve_repo_dir
+from ignore_list_store import IgnoreListError
 from pipeline import Pipeline
 from ai.hooks import HookRegistry
 from ai.reviewer import AIReviewer
@@ -296,7 +297,7 @@ def main() -> None:
             cmd_train(args, config)
         else:
             exit_code = cmd_run(args, config)
-    except ConfigError as error:
+    except (ConfigError, IgnoreListError) as error:
         sys.exit(str(error))
     finally:
         if handler:

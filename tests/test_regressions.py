@@ -928,5 +928,106 @@ class FileIgnoreListTests(unittest.TestCase):
         self.assertFalse(ignored & typos)
 
 
+class MongoCredentialLeakTests(unittest.TestCase):
+    URI = 'mongodb://SECRETUSER:SECRETPW@db.example.com:27017/admin'
+
+    def _failures(self):
+        from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
+        uri = self.URI
+        timeout = ServerSelectionTimeoutError(f'db.example.com:27017: timed out ({uri}), user SECRETUSER password SECRETPW')
+        yield 'timeout on operation', {'side_effect': None}, timeout
+        yield 'constructor failure', {'side_effect': ConfigurationError(f'bad uri {uri}')}, None
+
+    def _client(self, params, error):
+        if params['side_effect'] is not None:
+            return Mock(side_effect=params['side_effect'])
+        client = Mock()
+        client.__getitem__ = Mock(side_effect=error)
+        return Mock(return_value=client)
+
+    def _assert_clean(self, *texts):
+        for text in texts:
+            self.assertNotIn('SECRETUSER', text)
+            self.assertNotIn('SECRETPW', text)
+            self.assertNotIn(self.URI, text)
+
+    def _config(self, directory, uri_in_config):
+        modules = json.loads(Path(__file__).resolve().parent.parent.joinpath('config.json').read_text())['modules']
+        Path(directory, 'docs').mkdir()
+        Path(directory, 'docs', 'sample.txt').write_text('retreive')
+        settings = {'maxOccurrences': 1, 'ignore_list': {'database': 'db', 'collection': 'words'}}
+        if uri_in_config:
+            settings['MONGODB_URI'] = self.URI
+        path = os.path.join(directory, 'config.json')
+        Path(path).write_text(json.dumps({'settings': settings, 'modules': modules, 'repositories': {
+            'r': {'name': 'R', 'path': os.path.join(directory, 'docs')}}}))
+        return path
+
+    def test_alas_run_failures_never_print_uri_or_credentials(self):
+        import alas
+        from contextlib import chdir
+        for uri_in_config in [True, False]:
+            for label, params, error in self._failures():
+                with self.subTest(label=label, uri_in_config=uri_in_config), tempfile.TemporaryDirectory() as directory, chdir(directory):
+                    config = self._config(directory, uri_in_config)
+                    log = os.path.join(directory, 'run.log')
+                    env = {} if uri_in_config else {'ABO_MONGO_URI': self.URI}
+                    out, err = io.StringIO(), io.StringIO()
+                    with patch('sys.argv', ['alas.py', '--config', config, '--log', log]), patch.dict(os.environ, env, clear=True), \
+                            patch('alas.MLPredictor', return_value=Mock(available=False)), \
+                            patch('ignore_list_store.MongoClient', self._client(params, error)), \
+                            redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as caught:
+                        alas.main()
+                    self.assertNotEqual(caught.exception.code, 0)
+                    self.assertIn('MongoDB error', str(caught.exception.code))
+                    self._assert_clean(out.getvalue(), err.getvalue(), str(caught.exception.code), Path(log).read_text())
+
+    def test_save_ignore_list_failures_never_print_uri_or_credentials(self):
+        import save_ignore_list
+        from contextlib import chdir
+        for label, params, error in self._failures():
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as directory, chdir(directory):
+                config = self._config(directory, False)
+                reviewed = os.path.join(directory, 'out.jsonl')
+                Path(reviewed).write_text(json.dumps({'repo': 'r', 'word': 'retreive', 'ignore': True}) + '\n')
+                out, err = io.StringIO(), io.StringIO()
+                with patch('sys.argv', ['save_ignore_list.py', reviewed]), patch.dict(os.environ, {'ABO_CONFIG': config, 'ABO_MONGO_URI': self.URI}, clear=True), \
+                        patch('ignore_list_store.MongoClient', self._client(params, error)), \
+                        redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as caught:
+                    save_ignore_list.main()
+                self.assertIn('MongoDB error', str(caught.exception.code))
+                self._assert_clean(out.getvalue(), err.getvalue(), str(caught.exception.code))
+
+    def test_invalid_config_errors_never_print_uri_or_credentials(self):
+        from ignore_list_store import resolve_ignore_list_settings
+        settings = {'MONGODB_URI': self.URI, 'ignore_list': {'database': '', 'collection': 'words'}}
+        with patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError) as caught:
+            resolve_ignore_list_settings(settings)
+        self._assert_clean(str(caught.exception))
+
+    def test_committed_example_config_has_no_credentials(self):
+        text = Path(__file__).resolve().parent.parent.joinpath('config.json').read_text()
+        self.assertNotRegex(text, r'://[^/\s"]*@')
+
+    def test_redaction_covers_encoded_credentials_and_other_uris(self):
+        from pymongo.errors import OperationFailure
+        from ignore_list_store import IgnoreListError, load_words
+        uri = 'mongodb+srv://us%40er:p%40ss%3Aw%2Frd@cluster.example.net/?retryWrites=true'
+        message = 'auth us@er p@ss:w/rd failed; seed mongodb://OTHERUSER:OTHERPW@replica.example.net:27017'
+        client = Mock()
+        client.__getitem__ = Mock(side_effect=OperationFailure(message))
+        settings = {'ignore_list': {'database': 'db', 'collection': 'words'}}
+        with patch.dict(os.environ, {'ABO_MONGO_URI': uri}, clear=True), \
+                patch('ignore_list_store.MongoClient', Mock(return_value=client)), \
+                self.assertRaises(IgnoreListError) as caught:
+            load_words('repo', settings)
+        text = str(caught.exception)
+        for secret in ['us@er', 'p@ss:w/rd', 'OTHERUSER', 'OTHERPW']:
+            self.assertNotIn(secret, text)
+        self.assertIn('replica.example.net', text)
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertTrue(caught.exception.__suppress_context__)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,12 +1,47 @@
 """Ignore list operations (MongoDB or a JSON file) shared by scanning and reviewed-output saving."""
 import json
 import os
+import re
 import tempfile
+from urllib.parse import unquote, urlsplit
 
 try:  # optional: only the MongoDB backend needs pymongo
     from pymongo import MongoClient, UpdateOne
 except ImportError:
     MongoClient = UpdateOne = None
+
+
+class IgnoreListError(ValueError):
+    """A MongoDB failure whose message has been scrubbed of the connection URI and credentials."""
+
+
+def redact(text: str, uri: str) -> str:
+    """Removes the URI and its user:password from `text`."""
+    secrets = [uri]
+    try:
+        parts = urlsplit(uri)
+        secrets += [parts.username, parts.password]
+        secrets += [unquote(s) for s in secrets if s]
+    except ValueError:
+        pass
+    for secret in sorted({s for s in secrets if s}, key=len, reverse=True):
+        text = text.replace(secret, '***')
+    return re.sub(r'(//)[^/@\s]*@', r'\1***@', text)
+
+
+def _mongo(uri: str, operation):
+    """Runs operation(client), closing the client; re-raises Mongo failures without credentials."""
+    client = None
+    try:
+        client = MongoClient(uri)
+        return operation(client)
+    except Exception as error:
+        if type(error).__module__.split('.')[0] != 'pymongo':
+            raise
+        raise IgnoreListError(f'MongoDB error ({type(error).__name__}): {redact(str(error), uri)}') from None
+    finally:
+        if client is not None:
+            client.close()
 
 
 def _ignore_file(settings: dict):
@@ -70,12 +105,8 @@ def load_words(repo: str, settings: dict) -> set[str]:
         return set(_read_file(path).get(repo, []))
     _require_pymongo()
     uri, database, collection = resolve_ignore_list_settings(settings)
-    client = MongoClient(uri)
-    try:
-        result = client[database][collection].find_one({'repo_name': repo})
-        return set(result.get('words', [])) if result else set()
-    finally:
-        client.close()
+    result = _mongo(uri, lambda client: client[database][collection].find_one({'repo_name': repo}))
+    return set(result.get('words', [])) if result else set()
 
 
 def apply_decisions(repo: str, decisions: dict[str, bool], settings: dict) -> None:
@@ -106,8 +137,4 @@ def apply_decisions(repo: str, decisions: dict[str, bool], settings: dict) -> No
         ))
     if not operations:
         return
-    client = MongoClient(uri)
-    try:
-        client[database][collection].bulk_write(operations)
-    finally:
-        client.close()
+    _mongo(uri, lambda client: client[database][collection].bulk_write(operations))

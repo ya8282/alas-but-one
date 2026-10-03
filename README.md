@@ -35,6 +35,8 @@ Edit the settings and repositories in `config.json`; keep its existing `modules`
 }
 ```
 
+**Credentials:** keep them out of `config.json`. Leave `MONGODB_URI` credential-free (as above) and put the real connection string, with `user:password`, in the `ABO_MONGO_URI` environment variable (for example `export ABO_MONGO_URI='mongodb+srv://user:password@cluster.example.net'`; percent-encode special characters in the user and password with `urllib.parse.quote_plus`). If you must keep a secret in a config file, keep it out of version control: add `config.json` (or your `ABO_CONFIG` path) to the `.gitignore` of the repository that holds it. The `config.json` committed here is the localhost example and holds no secrets.
+
 Each repository names the directory to walk with `path`: absolute, `~`-prefixed, or relative to the config file's directory. `source_dir` is optional and is joined onto `path`. The older `settings.repo_base_full_path` + `relative_path` + `source_dir` form still works when `path` is absent.
 
 The config file is `./config.json` by default. Point both `alas.py` and `save_ignore_list.py` elsewhere with `ABO_CONFIG=/path/to/config.json`, or pass `--config PATH` to `alas.py`.
@@ -152,7 +154,7 @@ By default the ignore list lives in MongoDB using PyMongo and one document per r
 
 To avoid MongoDB entirely, set `"ignore_list": {"file": "ignore.json"}` in `settings`. The file is one JSON object `{"repo_name": ["word", ...]}`, resolved relative to the config file (absolute and `~` paths also work), created on first save, with sorted, deduplicated lists so it can be committed and reviewed in PRs. `pymongo` is not needed in this mode.
 
-For both scanning and saving, `ABO_MONGO_URI` overrides `settings.MONGODB_URI` when explicitly set. If absent, config is used. An empty or whitespace-only override raises a configuration error; it never falls back. URI, database and collection must be nonempty strings. Credentials are not printed in configuration errors.
+For both scanning and saving, `ABO_MONGO_URI` overrides `settings.MONGODB_URI` when explicitly set. If absent, config is used. An empty or whitespace-only override raises a configuration error; it never falls back. URI, database and collection must be nonempty strings. Credentials are not printed in configuration errors, and MongoDB connection failures are reported with the URI and `user:password` redacted.
 
 Default JSONL/CSV output omits approved words. To audit or remove an existing approval:
 
