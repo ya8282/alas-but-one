@@ -19,6 +19,8 @@ python alas.py --ai                     # AI review of borderline tokens
 python alas.py --verbose                # per-stage token counts
 python alas.py --log run.log            # DEBUG log: stage timings, raw AI responses
 python alas.py --parallel               # parallel repo processing
+python alas.py --fail-above 0.8       # CI: exit 1 if a non-ignored candidate has confidence >= 0.8
+python alas.py --fail-above 0.8 --quiet  # CI: print only those (repo<TAB>word<TAB>confidence<TAB>file:line)
 python alas.py --train labels.jsonl     # train ML model from labeled data
 ```
 

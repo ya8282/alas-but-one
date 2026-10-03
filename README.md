@@ -58,10 +58,22 @@ python alas.py --repo "My Docs"              # single repo by display name
 python alas.py --ai                          # AI review of borderline tokens
 python alas.py --parallel                    # process repos concurrently
 python alas.py --include-ignored             # audit or reverse prior ignore decisions
+python alas.py --fail-above 0.8               # CI gate: exit 1 if any non-ignored candidate scores >= 0.8
+python alas.py --fail-above 0.8 --quiet       # ...and print only those candidates
 python alas.py --verbose                     # per-stage token counts
 python alas.py --log run.log                 # debug log file (or settings.log_file)
 python alas.py --train labels.jsonl          # train ML classifier from labeled output
 python alas.py --config ~/abo.json           # config file elsewhere (or set ABO_CONFIG)
+```
+
+### CI mode
+
+`--fail-above X` (0 to 1) scans every repo and writes the output files as usual, then exits 1 if any candidate has `confidence >= X`, else 0. Candidates on the ignore list or approved terms never count, including with `--include-ignored`. With `--parallel` the check covers all repos; a repo that fails to scan also exits 1.
+
+`--quiet` (requires `--fail-above`) suppresses progress output and prints only the qualifying candidates to stdout, one per line, tab-separated: `repo`, `word`, `confidence`, `file:line` (first location). Repo scan failures go to stderr; AI reviewer messages, including batch failures, are suppressed, so use --log to see them.
+
+```bash
+python alas.py --fail-above 0.8 --quiet || echo "typo candidates found"
 ```
 
 ## Output

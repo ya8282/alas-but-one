@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import Mock, patch
 
 from tokenizer.tokenize_rst import TokenizerTask
@@ -577,6 +577,92 @@ class RegressionTests(unittest.TestCase):
                     with self.assertRaises(SystemExit):
                         alas.main()
                     load.assert_called_once_with(path)
+
+class FailAboveTests(unittest.TestCase):
+    def _run(self, directory, *flags, ignored=()):
+        from contextlib import chdir
+        import alas
+        base = alas.load_config()
+        config = {'settings': {**base['settings'], 'ai': {'enabled': False}}, 'modules': base['modules'], 'repositories': {
+            'r': {'name': 'test', 'path': directory, 'text_format': 'plain'}}, 'config_dir': directory}
+        out, err = io.StringIO(), io.StringIO()
+        code = 0
+        with chdir(directory), redirect_stdout(out), redirect_stderr(err), patch('sys.argv', ['alas.py', *flags]), \
+                patch('alas.load_config', return_value=config), patch('alas.MLPredictor', return_value=Mock(available=False)), \
+                patch('matchers.ignore_list_matcher.load_words', return_value=set(ignored)):
+            try:
+                alas.main()
+            except SystemExit as e:
+                code = e.code
+        return code, out.getvalue(), err.getvalue()
+
+    def _corpus(self, directory):
+        Path(directory, 'sample.txt').write_text('retreive ordinary')
+
+    def _score(self, directory):
+        _, out, _ = self._run(directory, '--fail-above', '0', '--quiet')
+        return float(out.splitlines()[0].split('\t')[2])
+
+    def test_exit_code_boundary_is_inclusive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self._corpus(directory)
+            score = self._score(directory)
+            self.assertGreater(score, 0.5)
+            self.assertEqual(self._run(directory, '--fail-above', f'{score:.2f}')[0], 1)
+            self.assertEqual(self._run(directory, '--fail-above', f'{score + 0.01:.2f}')[0], 0)
+            self.assertTrue(os.path.exists(os.path.join(directory, 'test.jsonl')))
+
+    def test_ignored_candidates_never_fail_even_with_include_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self._corpus(directory)
+            for flags in [(), ('--include-ignored',)]:
+                code, out, _ = self._run(directory, '--fail-above', '0', '--quiet', *flags, ignored={'retreive'})
+                self.assertEqual(out.count('retreive'), 0)
+                self.assertEqual(self._run(directory, '--fail-above', '0.5', *flags, ignored={'retreive'})[0], 0)
+            self.assertIn('retreive', Path(directory, 'test.jsonl').read_text())
+
+    def test_quiet_prints_only_qualifying_lines_and_requires_fail_above(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self._corpus(directory)
+            score = self._score(directory)
+            code, out, err = self._run(directory, '--fail-above', f'{score:.2f}', '--quiet')
+            self.assertEqual(out, f"test\tretreive\t{score:.2f}\t{os.path.join(directory, 'sample.txt')}:1\n")
+            self.assertEqual(self._run(directory, '--fail-above', '0.99', '--quiet')[1], '')
+            code, out, err = self._run(directory, '--quiet')
+            self.assertEqual((code, out), (2, ''))
+            self.assertIn('--quiet requires --fail-above', err)
+            self.assertEqual(self._run(directory, '--fail-above', '1.5')[0], 2)
+
+    def test_parallel_aggregates_across_repos(self):
+        import alas
+        config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
+        def fake(name, repo_config, *a, hits=None, fail_above=None, **k):
+            if repo_config['name'] == 'B':
+                hits.append(('B', Token('x', 'B', [TokenLocation('f', 1)], confidence=0.9)))
+            return 'out'
+        for flags in [(), ('--parallel',)]:
+            with patch('sys.argv', ['alas.py', '--fail-above', '0.8', *flags]), patch('alas.load_config', return_value=config), \
+                    patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+                    redirect_stdout(io.StringIO()):
+                with self.assertRaises(SystemExit) as raised:
+                    alas.main()
+            self.assertEqual(raised.exception.code, 1)
+
+    def test_parallel_repo_failure_fails_the_gate_quietly(self):
+        import alas
+        config = {'settings': {}, 'modules': {}, 'repositories': {'a': {'name': 'A'}, 'b': {'name': 'B'}}}
+        def fake(name, repo_config, *a, **k):
+            if repo_config['name'] == 'B':
+                raise ValueError('Invalid directory: nope')
+            return 'out'
+        out, err = io.StringIO(), io.StringIO()
+        with patch('sys.argv', ['alas.py', '--fail-above', '0.8', '--quiet', '--parallel']), patch('alas.load_config', return_value=config), \
+                patch('alas.MLPredictor', return_value=Mock(available=False)), patch('alas.run_repo', side_effect=fake), \
+                redirect_stdout(out), redirect_stderr(err):
+            with self.assertRaises(SystemExit) as raised:
+                alas.main()
+        self.assertEqual((raised.exception.code, out.getvalue()), (1, ''))
+        self.assertIn('b: FAILED', err.getvalue())
 
 class LogFileTests(unittest.TestCase):
     def setUp(self):
