@@ -10,6 +10,9 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import Mock, patch
 
+# Eval scripts live beside this file; make them importable under any runner.
+sys.path.append(str(Path(__file__).resolve().parent))
+
 from tokenizer.tokenize_rst import TokenizerTask
 from models.token import Token
 from models.token_location import TokenLocation
