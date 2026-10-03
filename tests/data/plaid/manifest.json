@@ -1,5 +1,5 @@
 {
-  "corpus_root": "/Volumes/Travel/Projects_2/docs-research/plaid/plaid_docs_markdown/docs",
+  "corpus_root": "/Volumes/Travel/Projects_2/docs-alas-but-one/.scratch/plaid/plaid/plaid_docs_markdown/docs",
   "repo": "Plaid",
   "settings": {
     "maxOccurrences": 1,
@@ -1456,22 +1456,17 @@
     "SpellCheckerTask",
     "JsonlFormatterTask"
   ],
-  "command": "PYTHONPATH=/private/tmp/alas-installed-deps /Users/ccho/.pyenv/versions/3.12.7/bin/python3 alas-but-one/tests/data/plaid/scan.py",
-  "execution_note": "The initial serial scan was stopped after over 20 minutes. This completed scan uses eight processes calling unchanged SpellCheckerTask on disjoint candidate partitions; all production stages and settings are unchanged.",
   "result": {
     "documents": 288,
-    "candidates": 2141,
-    "dictionary_unknown_review_candidates": 857,
-    "parallel_scan_seconds": 310.7,
+    "candidates": 2491,
+    "dictionary_unknown_review_candidates": 723,
     "manually_confirmed_typos": 1,
-    "source_hashes_unchanged": true,
-    "all_candidate_locations_verified": true,
-    "review_scope": "One confirmed typo, partial vocabulary review. Full queue precision is unmeasured."
+    "review_scope": "review.jsonl is the misspelled subset of candidates.jsonl in candidate order; no labels. One confirmed typo (typos.json), partial vocabulary review. Full queue precision is unmeasured."
   },
   "artifacts": {
-    "candidates.jsonl": "142ca7ae16dbb71d8cbb6dafb759c6094449b5149d81d5dcb6f8d6556432f8a9",
-    "review.jsonl": "d57482e98e3a66e32cdf6aea9aff812e0b9d137db5e19cb750d48c999df1705d",
-    "typos.json": "af4767fcd9a09cea9130f270372e16cf9a6271f9657d5c9179b71d3de8270751",
-    "scan.py": "a5176c38371d399858498fb6863b1a92a68748a96365a5cfb35ca00b4bec7e59"
-  }
+    "candidates.jsonl": "014cea9ad855b9fd49be18642ea84364f6f65dbc90c363931cfe7f96c299502c",
+    "review.jsonl": "861d02a1d93689c2d9531225200e2a42566e89047d06b3e4d1774b0e2b365442",
+    "typos.json": "af4767fcd9a09cea9130f270372e16cf9a6271f9657d5c9179b71d3de8270751"
+  },
+  "command": "python3 tests/scan_real_corpus.py --corpus <corpus_root> --repo-name Plaid --output tests/data/plaid/candidates.jsonl"
 }

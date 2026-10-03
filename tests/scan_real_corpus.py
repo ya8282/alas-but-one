@@ -15,6 +15,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--corpus', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--repo-name', default='Railway', help='Repository name recorded on each candidate.')
     parser.add_argument('--baseline', action='store_true')
     parser.add_argument('--ignore-file', help='File-backed ignore list (settings.ignore_list.file).')
     args = parser.parse_args()
@@ -40,7 +41,7 @@ def main():
         settings = {'maxOccurrences': 1}
         if args.ignore_file:
             settings['ignore_list'] = {'file': str(Path(args.ignore_file).resolve())}
-        repo = {'name': 'Railway'}
+        repo = {'name': args.repo_name}
         # The original collector excluded .md. Use the current collector for
         # both runs to compare identical documents, then archived original
         # tokenization/scoring for the baseline. No source files are rewritten.

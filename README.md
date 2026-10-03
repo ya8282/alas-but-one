@@ -264,6 +264,8 @@ python3 tests/scan_real_corpus.py --corpus /path/to/railway_docs_markdown --base
 python3 tests/scan_real_corpus.py --corpus /path/to/railway_docs_markdown --output /tmp/railway-after.jsonl
 ```
 
+`tests/data/plaid/` holds a Plaid scan (288 `.md` files, `maxOccurrences: 1`) captured with `scan_real_corpus.py`; no script consumes it. Reproduce it with `python3 tests/scan_real_corpus.py --corpus /path/to/plaid_docs_markdown/docs --repo-name Plaid --output tests/data/plaid/candidates.jsonl`; `manifest.json` records the per-file hashes. A rerun matches the saved words, locations and confidence; spelling suggestions that tie may differ between runs.
+
 Ranking still surfaces legitimate technical terms before real typos; a top ten with only one confirmed typo makes that limitation visible. Further queue improvement and a broader labeled precision estimate belong in Beads rather than being inferred from this sample.
 
 ## Known limitations
