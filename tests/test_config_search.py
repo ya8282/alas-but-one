@@ -172,5 +172,42 @@ class SettingsTypeTests(unittest.TestCase):
         self.assertEqual(config['settings']['log_file'], '')
 
 
+class RepositoriesSectionTests(unittest.TestCase):
+    def write(self, body):
+        import json
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = os.path.join(tmp.name, 'config.json')
+        with open(path, 'w') as f:
+            json.dump(body, f)
+        return path
+
+    def test_malformed_repositories_raise_config_error_naming_key_and_file(self):
+        cases = [
+            ({}, 'repositories'),
+            ({'repositories': []}, 'repositories'),
+            ({'repositories': {}}, 'repositories'),
+            ({'repositories': ['x']}, 'repositories'),
+            ({'repositories': {'a': 'x'}}, 'repositories.a'),
+            ({'repositories': {'a': {'path': '.'}}}, 'repositories.a.name'),
+            ({'repositories': {'a': {'name': 3, 'path': '.'}}}, 'repositories.a.name'),
+            ({'repositories': {'a': {'name': 'a', 'path': 3}}}, 'repositories.a.path'),
+        ]
+        for body, key in cases:
+            with self.subTest(body=body):
+                path = self.write(body)
+                with self.assertRaises(ConfigError) as ctx:
+                    load_config(path, require_repositories=True)
+                self.assertIn(key, str(ctx.exception))
+                self.assertIn(path, str(ctx.exception))
+
+    def test_repositories_not_checked_unless_required(self):
+        self.assertEqual(load_config(self.write({'repositories': []}))['repositories'], [])
+
+    def test_legacy_entry_without_path_is_accepted(self):
+        path = self.write({'repositories': {'a': {'name': 'a', 'relative_path': 'a'}}})
+        self.assertIn('a', load_config(path, require_repositories=True)['repositories'])
+
+
 if __name__ == '__main__':
     unittest.main()

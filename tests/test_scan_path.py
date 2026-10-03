@@ -82,6 +82,25 @@ class ScanPathTests(unittest.TestCase):
         code, _, _ = self.main()
         self.assertIn('alas --init', str(code))
 
+    def test_config_without_repositories_errors_alone_but_works_with_path(self):
+        cfg = os.path.join(self.root, 'norepos.json')
+        with open(cfg, 'w') as f:
+            json.dump({'settings': {'output_dir': self.cwd}}, f)
+        code, _, _ = self.main('--config', cfg)
+        self.assertIn('repositories', str(code))
+        self.assertIn(cfg, str(code))
+        code, _, err = self.main(self.docs, '--config', cfg)
+        self.assertEqual(code, 0, err)
+
+    def test_train_does_not_require_repositories(self):
+        cfg = os.path.join(self.root, 'norepos.json')
+        with open(cfg, 'w') as f:
+            json.dump({'settings': {'output_dir': self.cwd}}, f)
+        with patch.object(cli, 'cmd_train') as train:
+            code, _, err = self.main('--train', 'labeled.jsonl', '--config', cfg)
+        self.assertNotIn('repositories', str(code) + err)
+        train.assert_called_once()
+
     def test_path_with_repo_rejected(self):
         code, _, err = self.main(self.docs, '--repo', 'x')
         self.assertEqual(code, 2)

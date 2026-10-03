@@ -740,7 +740,7 @@ class RegressionTests(unittest.TestCase):
                 with patch('sys.argv', argv), patch.dict(os.environ, env, clear=True), patch('alas_but_one.cli.load_config', return_value=config) as load, patch('alas_but_one.cli.MLPredictor', return_value=Mock(available=False, problem=None)):
                     with self.assertRaises(SystemExit):
                         alas.main()
-                    load.assert_called_once_with(path)
+                    load.assert_called_once_with(path, require_repositories=True)
 
 class TaskFactoryTests(unittest.TestCase):
 

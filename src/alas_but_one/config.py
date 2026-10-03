@@ -60,8 +60,11 @@ def config_relative(value: str, config_dir: str) -> str:
     return os.path.normpath(os.path.join(config_dir, os.path.expanduser(value)))  # absolute value wins in join
 
 
-def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
-    """Loads JSON config and records its directory so relative repo paths resolve against it."""
+def load_config(path: str = DEFAULT_CONFIG, require_repositories: bool = False) -> Dict[str, Any]:
+    """
+    Loads JSON config and records its directory so relative repo paths resolve against it.
+    require_repositories=True validates the repositories section; only a scan needs it (a positional path replaces it).
+    """
     try:
         with open(path) as f:
             config = json.load(f)
@@ -88,6 +91,17 @@ def load_config(path: str = DEFAULT_CONFIG) -> Dict[str, Any]:
         if value is not None and not isinstance(value, str):
             raise ConfigError(f"{label} in {cfg_path} must be a string path. Edit that key in the config file.")
         return value
+
+    if require_repositories:
+        repos = config.get('repositories')
+        if not isinstance(repos, dict) or not repos:
+            raise ConfigError(f"repositories in {cfg_path} must be an object with at least one repository. Add one, or pass a directory to scan.")
+        for key, repo in repos.items():
+            if not isinstance(repo, dict):
+                raise ConfigError(f"repositories.{key} in {cfg_path} must be an object. Edit that key in the config file.")
+            for field in ('name', 'path'):
+                if (field == 'name' or field in repo) and not isinstance(repo.get(field), str):
+                    raise ConfigError(f"repositories.{key}.{field} in {cfg_path} must be a string. Edit that key in the config file.")
 
     config_dir = config['config_dir']
     settings = config.setdefault('settings', {})
