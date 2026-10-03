@@ -121,5 +121,34 @@ class InitTests(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(self.root, 'ignored.json')))
 
 
+class SettingsTypeTests(unittest.TestCase):
+    def load(self, settings):
+        import json
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = os.path.join(tmp.name, 'config.json')
+        with open(path, 'w') as f:
+            json.dump({'settings': settings}, f)
+        return load_config(path)
+
+    def test_ignore_list_file_expands_tilde(self):
+        with patch.dict(os.environ, {'HOME': '/home/someone'}):
+            config = self.load({'ignore_list': {'file': '~/ignore.json'}})
+        self.assertEqual(config['settings']['ignore_list']['file'], '/home/someone/ignore.json')
+
+    def test_bad_types_raise_config_error_naming_key(self):
+        cases = [
+            ({'training': []}, 'settings.training'),
+            ({'training': {'model_path': 3}}, 'settings.training.model_path'),
+            ({'output_dir': 3}, 'settings.output_dir'),
+            ({'ignore_list': {'file': 3}}, 'settings.ignore_list.file'),
+        ]
+        for settings, key in cases:
+            with self.subTest(key=key):
+                with self.assertRaises(ConfigError) as ctx:
+                    self.load(settings)
+                self.assertIn(key, str(ctx.exception))
+
+
 if __name__ == '__main__':
     unittest.main()
