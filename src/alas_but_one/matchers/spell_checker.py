@@ -1,8 +1,8 @@
 from typing import Dict
-from tasks.base_task import BaseTask
-from models.token import Token
+from alas_but_one.tasks.base_task import BaseTask
+from alas_but_one.models.token import Token
 from spellchecker import SpellChecker
-from matchers.confidence_scorer import compute_confidence
+from alas_but_one.matchers.confidence_scorer import compute_confidence
 
 
 # Components shorter than this (pre, non, co, ons) are not judged inside a compound.

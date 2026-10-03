@@ -2,17 +2,18 @@
 alas-but-one — atomic typo candidate finder for documentation repositories.
 
 Usage:
-  python alas.py                               # run all repos, JSONL output
-  python alas.py --format csv                  # CSV output
-  python alas.py --repo "Golang Driver Docs"   # single repo by display name
-  python alas.py --ai                          # AI review of borderline tokens
-  python alas.py --parallel                    # process repos concurrently
-  python alas.py --fail-above 0.8              # CI gate: exit 1 if any non-ignored candidate has confidence >= 0.8
-  python alas.py --fail-above 0.8 --quiet      # ...and print only those: repo<TAB>word<TAB>confidence<TAB>file:line
-  python alas.py --verbose                     # per-stage token counts
-  python alas.py --log run.log                 # debug log: stage timings, raw AI responses
-  python alas.py --train labels.jsonl          # train classifier from labeled JSONL
-  python alas.py --config ~/abo.json           # config elsewhere (or set ABO_CONFIG)
+  alas                               # run all repos, JSONL output
+  alas --format csv                  # CSV output
+  alas --repo "Golang Driver Docs"   # single repo by display name
+  alas --ai                          # AI review of borderline tokens
+  alas --parallel                    # process repos concurrently
+  alas --fail-above 0.8              # CI gate: exit 1 if any non-ignored candidate has confidence >= 0.8
+  alas --fail-above 0.8 --quiet      # ...and print only those: repo<TAB>word<TAB>confidence<TAB>file:line
+  alas --verbose                     # per-stage token counts
+  alas --log run.log                 # debug log: stage timings, raw AI responses
+  alas --train labels.jsonl          # train classifier from labeled JSONL
+  alas --config ~/abo.json           # config elsewhere (or set ABO_CONFIG)
+  alas --init                        # write an example config.json here and exit
 """
 import argparse
 import contextlib
@@ -21,15 +22,16 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Dict, Optional
 
-from config import ConfigError, check_repo_dir, default_config_path, load_config, resolve_repo_dir
-from ignore_list_store import IgnoreListError
-from pipeline import Pipeline
-from ai.hooks import HookRegistry
-from ai.reviewer import AIReviewer
-from training.predictor import MLPredictor
-from tasks.factory import TaskFactory
+from alas_but_one.config import DEFAULT_CONFIG, ConfigError, check_repo_dir, init_config, load_config, resolve_config_path, resolve_repo_dir
+from alas_but_one.ignore_list_store import IgnoreListError
+from alas_but_one.pipeline import Pipeline
+from alas_but_one.ai.hooks import HookRegistry
+from alas_but_one.ai.reviewer import AIReviewer
+from alas_but_one.training.predictor import MLPredictor
+from alas_but_one.tasks.factory import TaskFactory
 
 
 def setup_logging(path: str) -> logging.Handler:
@@ -158,7 +160,7 @@ def cmd_run(args, config: Dict) -> int:
 
 def _scan(args, config: Dict):
     settings = config['settings']
-    modules = config['modules']
+    modules = config.get('modules', {})
 
     model_path = settings.get('training', {}).get('model_path', 'models/classifier.pkl')
     predictor = MLPredictor(model_path)
@@ -216,7 +218,7 @@ def _scan(args, config: Dict):
 
 
 def cmd_train(args, config: Dict) -> None:
-    from training.trainer import train
+    from alas_but_one.training.trainer import train
     settings = config['settings']
     model_path = settings.get('training', {}).get('model_path', 'models/classifier.pkl')
     min_samples = settings.get('training', {}).get('min_training_samples', 20)
@@ -233,13 +235,27 @@ def _unit_float(text: str) -> float:
     return value
 
 
+def _version() -> str:
+    try:
+        return version('alas-but-one')
+    except PackageNotFoundError:
+        return 'unknown'
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description='Find atomic typo candidates in documentation repositories.'
     )
     parser.add_argument(
-        '--config', metavar='PATH', default=default_config_path(),
-        help='Config file (default: $ABO_CONFIG or ./config.json).'
+        '--version', action='version', version=f'%(prog)s {_version()}'
+    )
+    parser.add_argument(
+        '--config', metavar='PATH',
+        help='Config file (default: $ABO_CONFIG, ./config.json, then $XDG_CONFIG_HOME/alas-but-one/config.json).'
+    )
+    parser.add_argument(
+        '--init', action='store_true',
+        help='Write an example config to --config PATH (default ./config.json) and exit; never overwrites.'
     )
     parser.add_argument(
         '--train', metavar='JSONL',
@@ -286,8 +302,14 @@ def main() -> None:
     args = parser.parse_args()
     if args.quiet and args.fail_above is None:
         parser.error('--quiet requires --fail-above')
+    if args.init:
+        try:
+            print(f'Wrote example config to {init_config(args.config or DEFAULT_CONFIG)}. Put MongoDB credentials in ABO_MONGO_URI, never in the config file.')
+        except ConfigError as error:
+            sys.exit(str(error))
+        return
     try:
-        config = load_config(args.config)
+        config = load_config(resolve_config_path(args.config))
     except ConfigError as error:
         sys.exit(str(error))
 

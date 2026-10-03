@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alas-but-one"
+version = "0.1.0"
+description = "Find atomic typo candidates in documentation repositories."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+dependencies = [
+    "pyspellchecker>=0.8.1",
+    "pymongo>=4.8.0",
+]
+
+[project.optional-dependencies]
+ai = ["anthropic>=0.40.0"]
+ml = ["scikit-learn>=1.5.0", "numpy>=1.26.0"]
+
+[project.scripts]
+alas = "alas_but_one.cli:main"
+alas-save-ignore = "alas_but_one.save_ignore_list:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+alas_but_one = ["config.example.json"]

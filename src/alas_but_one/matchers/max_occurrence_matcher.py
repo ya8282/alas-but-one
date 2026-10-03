@@ -1,6 +1,6 @@
 from typing import Dict
-from tasks.base_task import BaseTask
-from models.token import Token
+from alas_but_one.tasks.base_task import BaseTask
+from alas_but_one.models.token import Token
 
 class MaxOccurrenceMatcherTask(BaseTask):
     def run(self, token_dict: Dict[str, Token]) -> Dict[str, Token]:

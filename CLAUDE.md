@@ -12,19 +12,21 @@ real typos or legitimate technical terms.
 ## Commands
 
 ```bash
-python alas.py                          # run, JSONL output (default)
-python alas.py --format csv             # CSV output
-python alas.py --repo "Golang Driver Docs"  # single repo
-python alas.py --ai                     # AI review of borderline tokens
-python alas.py --verbose                # per-stage token counts
-python alas.py --log run.log            # DEBUG log: stage timings, raw AI responses
-python alas.py --parallel               # parallel repo processing
-python alas.py --fail-above 0.8       # CI: exit 1 if a non-ignored candidate has confidence >= 0.8
-python alas.py --fail-above 0.8 --quiet  # CI: print only those (repo<TAB>word<TAB>confidence<TAB>file:line)
-python alas.py --train labels.jsonl     # train ML model from labeled data
+alas                          # run, JSONL output (default)
+alas --format csv             # CSV output
+alas --repo "Golang Driver Docs"  # single repo
+alas --ai                     # AI review of borderline tokens
+alas --verbose                # per-stage token counts
+alas --log run.log            # DEBUG log: stage timings, raw AI responses
+alas --parallel               # parallel repo processing
+alas --fail-above 0.8       # CI: exit 1 if a non-ignored candidate has confidence >= 0.8
+alas --fail-above 0.8 --quiet  # CI: print only those (repo<TAB>word<TAB>confidence<TAB>file:line)
+alas --train labels.jsonl     # train ML model from labeled data
 ```
 
 ## Architecture
+
+Code lives in `src/alas_but_one/` (install with `pip install -e '.[ai,ml]'`); module paths below are relative to it. Tests: `python -m unittest discover -s tests`.
 
 ### Pipeline stages (in order)
 
@@ -80,7 +82,7 @@ Scores are 0.0–1.0 (higher = more likely a real typo):
 
 1. Run the tool to generate `<repo>.jsonl`
 2. Open the file and set `"label"` field: `"true_positive"` or `"false_positive"`
-3. Run `python alas.py --train <repo>.jsonl` to fit a logistic regression classifier
+3. Run `alas --train <repo>.jsonl` to fit a logistic regression classifier
 4. Subsequent runs use `models/classifier.pkl` to override heuristic confidence scores
 5. Re-label and re-train as the model improves
 
@@ -96,33 +98,18 @@ and updates `token.confidence`, `token.suggestion`, `token.ai_comment`.
 
 Requires `ANTHROPIC_API_KEY` environment variable.
 
-### Pipeline hooks (`ai/hooks.py`)
-
-Register pre/post callbacks for any stage:
-
-```python
-from ai.hooks import default_hooks
-
-@default_hooks.post_stage('spell_checker')
-def my_hook(stage_name, data):
-    # data is the Dict[word, Token] after spell check
-    return data  # must return data
-```
-
-Pre/post repo hooks also available via `@default_hooks.pre_repo` / `@default_hooks.post_repo`.
-
 ## Adding a new matcher or formatter
 
-1. Create a new file in `matchers/` or `formatters/`
+1. Create a new file in `src/alas_but_one/matchers/` or `formatters/`
 2. Subclass `BaseTask` and implement `run()`
-3. Register it in `config.json` under `"modules"`
-4. Add it to the pipeline in `alas.py`
+3. Register it in `src/alas_but_one/registry.py` (config `"modules"` is an optional override)
+4. Add it to the pipeline in `src/alas_but_one/cli.py`
 
 ## Environment variables
 
 | Variable | Required for |
 |---|---|
-| `ABO_CONFIG` | config file location (default `./config.json`; `--config` overrides) |
+| `ABO_CONFIG` | config file location (overrides `./config.json` and `$XDG_CONFIG_HOME/alas-but-one/config.json`; `--config` overrides it; `alas --init` writes the example) |
 | `ABO_MONGO_URI` | ignore list (overrides config MONGODB_URI); put credentials here, never in config.json |
 | `ANTHROPIC_API_KEY` | `--ai` flag |
 

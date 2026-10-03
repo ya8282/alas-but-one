@@ -7,4 +7,4 @@ fi
 
 # cffi must be upgraded before pymongo can import its SSL backend
 pip install cffi --upgrade -q
-pip install -r "$CLAUDE_PROJECT_DIR/requirements.txt" -q
+pip install -e "$CLAUDE_PROJECT_DIR[ai,ml]" -q

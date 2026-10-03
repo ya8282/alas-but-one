@@ -4,16 +4,14 @@ from contextlib import chdir
 import hashlib
 import json
 from pathlib import Path
-import sys
 import tempfile
 from unittest.mock import patch
 
+from alas_but_one.cli import load_config, run_repo
+from alas_but_one.training.predictor import MLPredictor
+
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'tests' / 'data'
-sys.path.insert(0, str(ROOT))
-
-from alas import load_config, run_repo
-from training.predictor import MLPredictor
 
 
 def read_jsonl(path):
@@ -75,13 +73,13 @@ def main():
     config = load_config(str(ROOT / 'config.json'))
     with tempfile.TemporaryDirectory() as directory, chdir(directory):
         Path('evaluation.rst').write_text((DATA / 'evaluation.rst').read_text())
-        settings = {**config['settings'], 'repo_base_full_path': directory + '/',
+        settings = {**config['settings'],
                     'maxOccurrences': manifest['maxOccurrences'], 'ai': {'enabled': False}}
-        repo = {'name': 'offline-evaluation', 'relative_path': '', 'source_dir': ''}
+        repo = {'name': 'offline-evaluation', 'path': directory, 'source_dir': ''}
         # Replace only the external MongoDB read. Real collection, masking,
         # scoring, review filtering and formatter run through the CLI pipeline.
-        with patch('matchers.ignore_list_matcher.load_words', return_value=set(manifest['approved_terms'])):
-            path = run_repo('evaluation', repo, settings, config['modules'], 'jsonl', False,
+        with patch('alas_but_one.matchers.ignore_list_matcher.load_words', return_value=set(manifest['approved_terms'])):
+            path = run_repo('evaluation', repo, settings, config.get('modules', {}), 'jsonl', False,
                             MLPredictor(str(Path(directory) / 'absent.pkl')), False)
         after = read_jsonl(path)
         for record in after:

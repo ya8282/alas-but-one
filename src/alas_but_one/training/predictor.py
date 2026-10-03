@@ -2,8 +2,8 @@ import pickle
 from pathlib import Path
 from typing import Dict
 
-from models.token import Token
-from training.features import extract
+from alas_but_one.models.token import Token
+from alas_but_one.training.features import extract
 
 
 class MLPredictor:

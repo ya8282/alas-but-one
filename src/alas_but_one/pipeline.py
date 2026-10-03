@@ -2,8 +2,8 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
-from tasks.factory import TaskFactory
-from ai.hooks import HookRegistry
+from alas_but_one.tasks.factory import TaskFactory
+from alas_but_one.ai.hooks import HookRegistry
 
 logger = logging.getLogger(__name__)
 

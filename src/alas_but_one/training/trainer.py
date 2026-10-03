@@ -6,7 +6,7 @@ Label format in JSONL (set by user after reviewing output):
   "label": "false_positive"  -> word is a legitimate term
 
 Usage:
-  python alas.py --train path/to/labeled.jsonl
+  alas --train path/to/labeled.jsonl
 """
 import json
 import pickle
@@ -14,9 +14,9 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
-from models.token import Token
-from models.token_location import TokenLocation
-from training.features import extract
+from alas_but_one.models.token import Token
+from alas_but_one.models.token_location import TokenLocation
+from alas_but_one.training.features import extract
 
 
 def load_labeled_jsonl(path: str) -> Tuple[List[List[float]], List[int]]:

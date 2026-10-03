@@ -1,5 +1,5 @@
 from typing import List
-from models.token import Token
+from alas_but_one.models.token import Token
 from spellchecker import SpellChecker
 
 _checker = None
