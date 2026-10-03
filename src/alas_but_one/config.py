@@ -1,6 +1,7 @@
 """Config loading and repository path resolution shared by the CLI scripts."""
 import json
 import os
+import re
 from importlib import resources
 from typing import Any, Dict, Optional
 
@@ -142,3 +143,26 @@ def check_repo_dir(repo_config: Dict[str, Any], directory: str, config_path: str
         f"Repository {repo_config.get('name', '?')}: directory {directory} does not exist. "
         f"Check {key} in {config_path or 'the config file'}."
     )
+
+
+def adhoc_config(path: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Config that scans only `path` (relative to the cwd) as one repository keyed by its basename.
+    Keeps `config`'s settings and modules; without one, uses built-in defaults and the cwd as output_dir.
+    """
+    directory = os.path.abspath(os.path.expanduser(path))
+    if not os.path.isdir(directory):
+        raise ConfigError(f"Directory {directory} does not exist or is not a directory. Check the path you passed to alas.")
+    key = re.sub(r'[^A-Za-z0-9._-]+', '-', os.path.basename(directory)).strip('.-') or 'docs'
+    if config is None:
+        cwd = os.getcwd()
+        config = {
+            'settings': {
+                'maxOccurrences': 1,
+                'output_dir': cwd,
+                'training': {'model_path': config_relative(DEFAULT_MODEL_PATH, cwd)},
+            },
+            'config_dir': cwd,
+            'config_path': '',
+        }
+    return {**config, 'repositories': {key: {'name': key, 'path': directory}}}

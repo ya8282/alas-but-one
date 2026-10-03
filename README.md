@@ -36,6 +36,14 @@ pip install -e '.[ai,ml]'
 
 The install provides the `alas` and `alas-save-ignore` commands. The `ai` extra (`anthropic`) is only needed for `--ai` and the `ml` extra (`scikit-learn`, `numpy`) for `--train`. The core requirements are `pyspellchecker` and `pymongo`. Prefer pipx or a clean virtual environment: the unrelated package named `spellchecker` breaks imports of `pyspellchecker` in shared environments.
 
+## Quickstart
+
+```bash
+alas /path/to/docs
+```
+
+This scans that one directory with built-in defaults and writes `<directory name>.jsonl` to the current directory. It needs no config file and no MongoDB (with no ignore list configured, nothing is ignored). If a config is found, its settings are used but only the given directory is scanned. It cannot be combined with `--repo`, `--train` or `--init`.
+
 ## Setup
 
 Run `alas --init` to write an example `config.json` in the current directory (or at `--config PATH`; it never overwrites a file), then edit its settings and repositories. The example uses a JSON ignore list file, so no MongoDB is needed to start; switch `ignore_list` to `database` and `collection` to use MongoDB:
@@ -78,6 +86,7 @@ Markdown masking removes fenced/indented code, inline backtick code, initial YAM
 ## Usage
 
 ```bash
+alas /path/to/docs                 # scan one directory, no config or MongoDB needed
 alas                               # run all repos, JSONL output (default)
 alas --format csv                  # CSV output instead
 alas --output-dir out              # write outputs to ./out

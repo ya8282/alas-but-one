@@ -324,7 +324,13 @@ class RegressionTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'ABO_MONGO_URI'):
                         operation()
                 client.assert_not_called()
-        for invalid in [{}, {'MONGODB_URI': 'mongodb://secret', 'ignore_list': {'database': '', 'collection': 'words'}}, {'MONGODB_URI': 1, 'ignore_list': {'database': 'db', 'collection': 'words'}}]:
+        with patch.dict(os.environ, {}, clear=True), patch('alas_but_one.ignore_list_store.MongoClient') as client:
+            self.assertEqual(load_words('repo', {}), set())  # no ignore list configured: no-op
+            client.assert_not_called()
+            with self.assertRaisesRegex(ValueError, 'MONGODB_URI'):  # database set but no URI anywhere
+                load_words('repo', {'ignore_list': {'database': 'db', 'collection': 'words'}})
+            client.assert_not_called()
+        for invalid in [{'MONGODB_URI': 'mongodb://secret', 'ignore_list': {'database': '', 'collection': 'words'}}, {'MONGODB_URI': 1, 'ignore_list': {'database': 'db', 'collection': 'words'}}]:
             with patch.dict(os.environ, {}, clear=True), patch('alas_but_one.ignore_list_store.MongoClient') as client:
                 with self.assertRaises(ValueError) as caught:
                     load_words('repo', invalid)
